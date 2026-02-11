@@ -92,7 +92,9 @@
 
 
     dispatch_irq:
+        pha
         inc16 irq_counter  ; Increment the IRQ counter
         bit PORTA          ; Read PORTA to clear interrupt
+        pla
         rti
 

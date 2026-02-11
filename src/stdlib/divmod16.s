@@ -1,8 +1,11 @@
-.SCOPE Math
+.ifndef DIVMOD16_S
+DIVMOD16_S = 1
+
+.include "stdlib.s"
 
 .segment "CODE"
 
-.PROC divmod16
+.proc divmod16
     ; Perform divmod operation on a 2 byte word.
     ;
     ; In:
@@ -63,13 +66,13 @@
         dex
         bne @divloop                ; Process all 16 bits, before continuing.
    
-        rol Regs::word_a            ; Shift last carry bit (representing if the last
-        rol Regs::word_a + 1        ; division was possible or not) into the quotient.
+    rol Regs::word_a            ; Shift last carry bit (representing if the last
+    rol Regs::word_a + 1        ; division was possible or not) into the quotient.
 
     ply
     plx
     rts
 
-.ENDPROC
+.endproc
 
-.ENDSCOPE
+.endif

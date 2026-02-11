@@ -2,16 +2,20 @@
 ; BIOS for the Ben Eater breadboard computer
 ; -----------------------------------------------------------------
 
+.ifndef BIOS_S
+BIOS_S = 1
+
 .setcpu "65C02"
 
+.include "macros/macros.s"
 .include "via.s"
 .include "lcd.s"
 
-; Prevent build warnings when a segment is not used.
+; Prevent build warnings when a segment is not used in an application.
 .segment "DATA"
 .segment "VARIABLES"
 
-.SCOPE BIOS
+.scope BIOS
 
 .segment "BIOS"
 
@@ -19,10 +23,9 @@
         ldx #$ff               ; Initialize stack pointer
         txs
 
-        jsr init_interrupts    ; Initialze interrupt handling
-
-        jsr lcd_init           ; Initialize LCD display
-        jsr lcd_clear          ; Clear LCD display
+        jsr init_interrupts   ; Initialze interrupt handling
+        jsr LCD::init         ; Initialize LCD display
+        jsr LCD::clr          ; Clear LCD display
 
         jmp main               ; Note: `main` must be implemented by application
 
@@ -39,7 +42,7 @@
 
 .segment "BIOS"
 
-    .PROC init_interrupts
+    .proc init_interrupts
         ; Setup the default interrupt handling:
         ; 
         ; - Interrupts disabled
@@ -51,19 +54,11 @@
         sei                    ; Disable interrupts (must be enabled
                                ; using `cli` when code that uses this
                                ; bios requires interrupts)
-
-        lda #<default_nmi      ; Set default NMI handler (can be overridden)
-        sta nmi_vector
-        lda #>default_nmi
-        sta nmi_vector + 1
-
-        lda #<default_irq      ; Set default IRQ handler (can be overridden)
-        sta irq_vector
-        lda #>default_irq
-        sta irq_vector + 1
+        cp_word nmi_vector, default_nmi
+        cp_word irq_vector, default_irq
 
         rts
-    .ENDPROC
+    .endproc
 
     dispatch_nmi:
         jmp (nmi_vector)       ; Forward to configured NMI handler
@@ -83,4 +78,6 @@
     .word boot                 ; Reset vector
     .word dispatch_irq         ; IRQ vector
 
-.ENDSCOPE
+.endscope
+
+.endif

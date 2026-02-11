@@ -1,8 +1,6 @@
 .include "bios/bios.s"
-.include "stdlib/common.s"
-.include "stdlib/math.s"
-.include "stdlib/string.s"
-.include "macros/inc16.s"
+.include "stdlib/divmod16.s"
+.include "stdlib/fmt16_dec.s"
 
 .segment "DATA"
 
@@ -15,21 +13,16 @@
 .segment "CODE"
 
     main:
-        lda #0
-        sta irq_counter           ; Reset the IRQ counter
-        sta irq_counter + 1
+        ; Reset the IRQ counter
+        clr_word irq_counter
 
-        lda #(IER_SET | IER_CA1)  ; Activate interrupts for CA1
-        sta IER
-        lda #0
-        sta PCR                   ; Trigger VIA CA1 interrupt on falling edge
+        ; Activate interrupts for VIA's CA1 port
+        set_byte VIA::IER, #(VIA::IER_SET | VIA::IER_CA1)
+        clr_byte VIA::PCR  ; Trigger interrupt on falling edge
 
-        lda #<dispatch_irq        ; Configure IRQ handler to use.
-        sta BIOS::irq_vector
-        lda #>dispatch_irq
-        sta BIOS::irq_vector + 1
-        
-        cli                       ; Enable interrupts
+        ; Configure IRQ handler
+        cp_word BIOS::irq_vector, handle_irq
+        cli
 
         jsr hello_world
 
@@ -38,40 +31,35 @@
         ora irq_counter + 1
         beq @wait_for_button
 
-        jsr lcd_clear
+        jsr LCD::clr
 
     @loop_irq_counter:
         ; Convert the number to a decimal string.
-        sei                         ; Disable interrupts, to prevent race condition
-        lda irq_counter             ; when the IRQ counter gets updated right between
-        sta String::word2dec::value ; reading the two bytes here.
-        lda irq_counter + 1
-        sta String::word2dec::value + 1
+        ; Disable interrupts, to prevent race conditions on irq_counter.
+        sei
+        cp_word Regs::word_a, irq_counter
         cli
-        jsr String::word2dec
+        jsr fmt16_dec
 
-        jsr lcd_home
-        jsr print_decimal
+        jsr LCD::home
+        jsr @print_str_reverse
 
-        jmp @loop_irq_counter
+        bra @loop_irq_counter
 
 
     ; Subroutine: print the decimal string.
     ; Out: Y clobbered
-    print_decimal:
-        pha
-        ldy #0
-    @loop:
-        cpy #5
-        beq @done
-        lda String::word2dec::decimal,y
-        beq @done
-        jsr lcd_send_data
-        iny
-        bra @loop
-    @done:
-        pla
-        rts
+    @print_str_reverse:
+        ldy Regs::strlen
+        @loop:
+            cpy #0
+            beq @done
+            dey
+            lda Regs::str,y
+            jsr LCD::send_data
+            bra @loop
+        @done:
+            rts
 
 
     ; Subroutine: print hello message to the LCD.
@@ -79,22 +67,22 @@
         pha
         phx
         ldx #0
-    @loop:
-        lda hello,x
-        beq @done
-        jsr lcd_send_data
-        inx
-        bra @loop
-    @done:
+        @loop:
+            lda hello,x
+            beq @done
+            jsr LCD::send_data
+            inx
+            bra @loop
+        @done:
         plx
         pla
         rts
 
 
-    dispatch_irq:
+    handle_irq:
         pha
-        inc16 irq_counter  ; Increment the IRQ counter
-        bit PORTA          ; Read PORTA to clear interrupt
+        inc_word irq_counter  ; Increment the IRQ counter
+        bit VIA::PORTA             ; Read PORTA to clear interrupt
         pla
         rti
 

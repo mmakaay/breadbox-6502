@@ -1,0 +1,21 @@
+.ifndef STORE16_S
+STORE16_S = 1
+
+.include "set_byte.s"
+
+.macro set_word target, lo, hi
+    ; Store a 16 bit value (word) in two consecutive memory positions.
+    ;
+    ; In:
+    ;   target = address of the low byte target address
+    ;   lo = the low byte to sture
+    ;   hi = the high byte to store
+    ; Out:
+    ;   target = value of low byte
+    ;   target + 1 = value of high byte
+    ;   A = clobberede7
+    set_byte target, lo
+    set_byte target + 1, hi
+.endmacro
+
+.endif

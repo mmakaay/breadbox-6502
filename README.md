@@ -1,14 +1,10 @@
-# Using the T38 EEPROM writer
+# 65C02 breadboard computer
 
-## Setup 
-
-Do connect the device directly to a USB-C port on the MacBook.
-It won't work when connected to a HUB (not enough power I
-presume).
-
-There is no vendor software for MacBook, but the open source
-application `minipro` can be used. This can be installed from
-homebrew with `brew install minipro`.
+This repository contains information and code about my version
+of Ben Eater's breadboard computer. See Ben's website at
+[https://eater.net](https://eater.net) for many useful resources
+and a very binge-worthy collection of explanation videos (only
+binge-worthy, if you are into this kind of thing, of course).
 
 ## Coding a ROM 
 
@@ -36,8 +32,10 @@ with open("some.bin", "wb") as f:
 ```
 
 A better and eventually easier way is to use an assembler.
-Wasm is an option for this, but it looks like the cc65 suite provides
-more useful features for this: https://cc65.github.io/
+Wasm is what Ben starts out with in his videos, but later on he
+uses the "cc65" suite. This suite provides *a lot* of useful
+features, and I have written all assembly code from this
+repository using this.
 
 ```bash
 git clone https://github.com/cc65/cc65
@@ -47,12 +45,24 @@ make
 
 Documentation at: https://cc65.github.io/doc/
 
-See src/ for examples.
+I have based all my code on cc65
+See `src/` and `projects/` for examples.
+
+## T48 EEPROM writer
+
+For writing the ROM, I use a T48 writer.
+
+Do connect the device directly to a USB-C port on the MacBook.
+It won't work when connected to a HUB (not enough power I
+presume).
+
+There is no vendor software for MacBook, but the open source
+application `minipro` can be used. This can be installed from
+homebrew with `brew install minipro`.
 
 ## Write an EEPROM
 
-To write an EEPROM image (usingn a T48 writer) to the EEPROM
-that I bought for the breadboard 6205 project:
+To write a ROM image to an EEPROM:
 
 ```bash
 minipro -p AT28C256 -w rom_image.bin
@@ -62,17 +72,17 @@ The EEPROM might be write protected. In that case, the extra
 option `-u` can be used. The `minipro` application will warn
 about write protected EEPROMs and suggest this flag.
 
-## Build tooling
+## Build
 
-To build a ROM, a `Justfile` is provided in `src/`, that can be
-used to build the ROM images from `src/*`.
+To build a ROM, a `Justfile` is provided, that can be used to build
+the ROM images from `projects/*`.
 
 The `just` tool is a lot like `make`, only it is more about
 performing tasks than about build structuring, and it allows for
 hierarchical `Justfile`s in the directory structure. It can be
 installed using `brew install just`.
 
-Commands that can be used:
+Some commands that can be used:
 
 ```bash
 cd src/some_rom_code

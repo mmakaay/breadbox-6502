@@ -1,13 +1,13 @@
-.ifndef FMT16_DEC_S
-FMT16_DEC_S = 1
+.ifndef FMTDEC16_S
+FMTDEC16_S = 1
 
 .include "str.s"
 .include "../macros/set_word.s"
 
 .segment "CODE"
 
-.proc fmt16_dec
-    ; Format 16 bit value into decimal representation string.
+.proc fmtdec16
+    ; Format 16 bit value (word) into decimal representation string.
     ;
     ; In:
     ;   Regs::word_a = the 16 bit value to convert.
@@ -28,8 +28,8 @@ FMT16_DEC_S = 1
     @next_digit:
         jsr divmod16
 
-        clc               ; Clear carry for clean addition
         lda Regs::word_c  ; Get computed remainder
+        clc               ; Clear carry for clean addition
         adc #'0'          ; Add remainder to ASCII value of "0"
         jsr str_add       ; Add the ASCII digit to the string buffer
 

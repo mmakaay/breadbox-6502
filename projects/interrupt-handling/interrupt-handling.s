@@ -1,6 +1,6 @@
 .include "bios/bios.s"
 .include "stdlib/divmod16.s"
-.include "stdlib/fmt16_dec.s"
+.include "stdlib/fmtdec16.s"
 
 .segment "DATA"
 
@@ -39,7 +39,7 @@
         sei
         cp_word Regs::word_a, irq_counter
         cli
-        jsr fmt16_dec
+        jsr fmtdec16
 
         jsr LCD::home
         jsr @print_str_reverse

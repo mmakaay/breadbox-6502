@@ -10,6 +10,7 @@ BIOS_S = 1
 .include "macros/macros.s"
 .include "via.s"
 .include "lcd.s"
+;.include "serial.s"
 
 ; Prevent build warnings when a segment is not used in an application.
 .segment "DATA"
@@ -23,9 +24,10 @@ BIOS_S = 1
         ldx #$ff               ; Initialize stack pointer
         txs
 
-        jsr init_interrupts   ; Initialze interrupt handling
-        jsr LCD::init         ; Initialize LCD display
-        jsr LCD::clr          ; Clear LCD display
+        jsr init_interrupts    ; Initialze interrupt handling
+        jsr LCD::init          ; Initialize LCD display
+        jsr LCD::clr           ; Clear LCD display
+        ;jsr SERIAL::init       ; Initialize the ACIA serial connection
 
         jmp main               ; Note: `main` must be implemented by application
 

@@ -15,6 +15,7 @@ BIOS_VIA_S = 1
 .segment "BIOS"
 
     ; Registers
+    .scope REG
     PORTB     = __VIA_START__ + $0       ; I/O register for port B
     PORTA     = __VIA_START__ + $1       ; I/O register for port A
     DDRA      = __VIA_START__ + $2       ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
@@ -22,10 +23,9 @@ BIOS_VIA_S = 1
     PCR       = __VIA_START__ + $c       ; Peripheral Control Register (configure CA1/2, CB1/2)
     IFR       = __VIA_START__ + $d       ; Interrupt Flag Register (read triggered interrupt)
     IER       = __VIA_START__ + $e       ; Interrupt Enable Register (configure interrupts)
+    .endscope
 
-    ; PCR register bits
-
-
+    .scope BIT
     ; IER register bits
     IER_SET   = %10000000   
     IER_CLR   = %00000000  
@@ -36,6 +36,7 @@ BIOS_VIA_S = 1
     IER_SHR   = %00000100   ; Shift register
     IER_CA1   = %00000010   ; Shift register
     IER_CA2   = %00000001   ; Shift register
+    .endscope
 
 .endscope
 

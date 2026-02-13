@@ -6,6 +6,7 @@
 BIOS_LCD_S = 1
 
 .include "macros/macros.s"
+.include "bios/via.s"
 
 .scope LCD
 
@@ -25,10 +26,10 @@ BIOS_LCD_S = 1
     ; Out:
     ;   A = clobbered 
     init:
-        clr_byte VIA::PORTA   ; Clear control bits (EN, RW, RS)
+        clr_byte VIA::REG::PORTA   ; Clear control bits (EN, RW, RS)
 
-        set_byte VIA::DDRB, #%11111111
-        set_byte VIA::DDRA, #%11100000
+        set_byte VIA::REG::DDRB, #%11111111
+        set_byte VIA::REG::DDRA, #%11100000
 
         lda #%00111000   ; Set 8-bit mode, 2 line display, 5x8 font
         jsr send_instruction
@@ -63,12 +64,12 @@ BIOS_LCD_S = 1
         jsr wait_till_idle
 
         ; Put the instruction on the LCD inputs.
-        sta VIA::PORTB
+        sta VIA::REG::PORTB
 
         ; Write to instruction register.
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_CMND | LCD_EN)
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_CMND)
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_CMND)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_CMND | LCD_EN)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_CMND)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_CMND)
         
         rts
 
@@ -82,12 +83,12 @@ BIOS_LCD_S = 1
         jsr wait_till_idle
 
         ; Put the provided data on the LCD inputs.
-        sta VIA::PORTB
+        sta VIA::REG::PORTB
 
         ; Write to data register.
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_DATA)
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_DATA | LCD_EN)
-        set_byte VIA::PORTA, #(LCD_WRITE | LCD_DATA)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_DATA)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_DATA | LCD_EN)
+        set_byte VIA::REG::PORTA, #(LCD_WRITE | LCD_DATA)
 
         rts
 
@@ -95,17 +96,17 @@ BIOS_LCD_S = 1
     ; Subroutine: wait for the LCD screen to not be busy.
     wait_till_idle:
         pha
-        set_byte VIA::DDRB, #%00000000   ; Configure port B for input
+        set_byte VIA::REG::DDRB, #%00000000   ; Configure port B for input
 
         @loop:
-            set_byte VIA::PORTA, #(LCD_READ | LCD_CMND)
-            set_byte VIA::PORTA, #(LCD_READ | LCD_CMND | LCD_EN)
-            lda  VIA::PORTB  ; Load status information from port B
+            set_byte VIA::REG::PORTA, #(LCD_READ | LCD_CMND)
+            set_byte VIA::REG::PORTA, #(LCD_READ | LCD_CMND | LCD_EN)
+            lda  VIA::REG::PORTB  ; Load status information from port B
             and #LCD_BUSY    ; Look only at the LCD busy bit
             bne @loop        ; Wait until busy bit = 0
 
-        set_byte VIA::PORTA, #(LCD_READ | LCD_CMND) 
-        set_byte VIA::DDRB, #%11111111   ; Configure port B for output
+        set_byte VIA::REG::PORTA, #(LCD_READ | LCD_CMND) 
+        set_byte VIA::REG::DDRB, #%11111111   ; Configure port B for output
         pla
         rts
 

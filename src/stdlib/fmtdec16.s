@@ -17,8 +17,10 @@ FMTDEC16_S = 1
     ;   A = clobbered
     ;   X/Y = preserved
 
-    phx
-    phy
+    txa
+    pha
+    tya
+    pha
 
     jsr str_clr  ; Clear string buffer
 
@@ -38,8 +40,10 @@ FMTDEC16_S = 1
         ora Regs::word_a + 1
         bne @next_digit  ; Branch if the quotient is not yet at zero
 
-    ply
-    plx
+    pla
+    tay
+    pla
+    tax
     rts
 
 .endproc

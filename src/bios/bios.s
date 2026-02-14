@@ -5,7 +5,12 @@
 .ifndef BIOS_S
 BIOS_S = 1
 
-.setcpu "65C02"
+; I use a 65C02, but let's keep the code compatible for 6502.
+; This is good for compatibility, but also for forced-upon
+; compatibility in cases where Ali Express vendors ship a 6502
+; CPU as a 65C02 :-/ (debugging BRA being skipped instead of
+; actually branching on 6502 was not that much fun).
+.setcpu "6502"
 
 .include "macros/macros.s"
 .include "via.s"
@@ -33,7 +38,7 @@ BIOS_S = 1
 
     ; Can be jumped to, to fully halt the computer.
     halt:
-        bra halt               ; Stop execution
+        jmp halt               ; Stop execution
 
 .segment "ZEROPAGE"
 
@@ -56,8 +61,8 @@ BIOS_S = 1
         sei                    ; Disable interrupts (must be enabled
                                ; using `cli` when code that uses this
                                ; bios requires interrupts)
-        cp_word nmi_vector, default_nmi
-        cp_word irq_vector, default_irq
+        cp_address nmi_vector, default_nmi
+        cp_address irq_vector, default_irq
 
         rts
     .endproc

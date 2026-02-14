@@ -23,7 +23,7 @@
         clr_byte VIA::REG::PCR  ; Trigger interrupt on falling edge
 
         ; Configure IRQ handler
-        cp_word BIOS::irq_vector, handle_irq
+        cp_address BIOS::irq_vector, handle_irq
         cli
 
         jsr hello_world
@@ -43,53 +43,58 @@
         cli
 
         ; Did the irq_counter change? 
-        lda #<Regs::word_a
-        cmp #<last_irq_counter
+        lda Regs::word_a
+        cmp last_irq_counter
         bne @update
-        lda #>Regs::word_a
-        cmp #>last_irq_counter
+        lda Regs::word_a + 1
+        cmp last_irq_counter + 1
         bne @update
 
         ; No change, wait a bit longer.
-        bra @loop_irq_counter
+        jmp @loop_irq_counter
 
-        ; Yes, the IRQ counter has changed. Update LCD display.
-        @update:
-            jsr fmtdec16
-            jsr LCD::home
-            jsr @print_str_reverse
+    @update:
+        ; Remember the current value for next comparison.
+        cp_word last_irq_counter, Regs::word_a
 
-            bra @loop_irq_counter
+        ; The IRQ counter has changed. Update LCD display.
+        jsr fmtdec16
+        jsr LCD::home
+        jsr @print_str_reverse
+
+        jmp @loop_irq_counter
 
 
     ; Subroutine: print string buffer in reverse.
     ; Out: Y clobbered
     @print_str_reverse:
         ldy Regs::strlen
-        @loop:
-            cpy #0
-            beq @done
-            dey
-            lda Regs::str,y
-            jsr LCD::send_data
-            bra @loop
-        @done:
-            rts
+    @loop:
+        cpy #0
+        beq @done
+        dey
+        lda Regs::str,y
+        jsr LCD::send_data
+        jmp @loop
+    @done:
+        rts
 
 
     ; Subroutine: print welcome message to the LCD.
     hello_world:
         pha
-        phx
+        txa
+        pha
         ldx #0
-        @loop:
-            lda hello,x
-            beq @done
-            jsr LCD::send_data
-            inx
-            bra @loop
-        @done:
-        plx
+    @loop:
+        lda hello,x
+        beq @done
+        jsr LCD::send_data
+        inx
+        jmp @loop
+    @done:
+        pla
+        tax
         pla
         rts
 

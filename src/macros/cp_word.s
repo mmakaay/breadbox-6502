@@ -1,19 +1,20 @@
-.ifndef COPY16_S
-COPY16_S = 1
-
-.include "set_word.s"
+.ifndef CP_WORD_S
+CP_WORD_S = 1
 
 .macro cp_word target, source
-    ; Copy 16 bits (word) from the source address to the target address.
+    ; Copy a 16 bit value (word) from one memory location to another.
     ;
     ; In:
-    ;   target = address to copy value to
-    ;   source = address to copy value from
+    ;   target = address to copy to
+    ;   source = address to copy from
     ; Out:
+    ;   target = value copied from source
     ;   source = preserved
-    ;   target = copied value from source
     ;   A = clobbered
-    set_word target, #<source, #>source
+    lda     source
+    sta     target
+    lda     source + 1
+    sta     target + 1
 .endmacro
 
 .endif

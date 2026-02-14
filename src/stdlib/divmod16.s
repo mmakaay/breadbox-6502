@@ -18,8 +18,10 @@ DIVMOD16_S = 1
     ;   A = clobbered
     ;   X/Y = preserved
 
-    phx
-    phy
+    txa
+    pha
+    tya
+    pha
 
     ; Initialize the remainder word_c.
     lda #0
@@ -69,8 +71,10 @@ DIVMOD16_S = 1
     rol Regs::word_a            ; Shift last carry bit (representing if the last
     rol Regs::word_a + 1        ; division was possible or not) into the quotient.
 
-    ply
-    plx
+    pla
+    tay
+    pla
+    tax
     rts
 
 .endproc

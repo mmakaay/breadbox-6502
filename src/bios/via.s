@@ -18,8 +18,8 @@ BIOS_VIA_S = 1
     .scope REG
     PORTB     = __VIA_START__ + $0       ; I/O register for port B
     PORTA     = __VIA_START__ + $1       ; I/O register for port A
-    DDRA      = __VIA_START__ + $2       ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
-    DDRB      = __VIA_START__ + $3       ; Data direction for pins A0 - A7 (bit per pin, 0 = in, 1 = out)
+    DDRB      = __VIA_START__ + $2       ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
+    DDRA      = __VIA_START__ + $3       ; Data direction for pins A0 - A7 (bit per pin, 0 = in, 1 = out)
     PCR       = __VIA_START__ + $c       ; Peripheral Control Register (configure CA1/2, CB1/2)
     IFR       = __VIA_START__ + $d       ; Interrupt Flag Register (read triggered interrupt)
     IER       = __VIA_START__ + $e       ; Interrupt Enable Register (configure interrupts)

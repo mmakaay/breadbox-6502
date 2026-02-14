@@ -8,16 +8,18 @@
 
     .proc hello_world
         pha
-        phx
+        txa
+        pha
         ldx #0
     @loop:
         lda hello,x
         beq @done
         jsr LCD::send_data
         inx
-        bra @loop
+        jmp @loop
     @done:
-        plx
+        pla
+        tax
         pla
         rts
     .endproc

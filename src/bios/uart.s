@@ -1,5 +1,5 @@
 ; -----------------------------------------------------------------
-; UART support for RS232 serial communication
+; UART HAL for RS232 serial communication
 ; -----------------------------------------------------------------
 
 .ifndef BIOS_UART_S
@@ -21,58 +21,51 @@ BIOS_UART_S = 1
     ; Access to the low level driver API
     ; -------------------------------------------------------------
 
-    ; Initialize the serial interface: N-8-1, 19200 baud.
-    ;
-    ; Out:
-    ;   A, X, Y = clobbered
-    ;
     init = DRIVER::init
+        ; Initialize the serial interface: N-8-1, 19200 baud.
+        ;
+        ; Out:
+        ;   A, X, Y = clobbered
 
-    ; Write to status register for soft reset
-    ;
-    ; Out:
-    ;   A, X, Y = clobbered
-    ;
     soft_reset = DRIVER::soft_reset
+        ; Write to status register for soft reset
+        ;
+        ; Out:
+        ;   A, X, Y = clobbered
 
-    ; Check if there is a byte in the receiver buffer.
-    ;
-    ; Out:
-    ;   A = clobbered
-    ;   Z = 0: data available in the receiver (A != 0)
-    ;   Z = 1: no data available (A = 0)
-    ;
     check_rx = DRIVER::check_rx
+        ; Check if there is a byte in the receiver buffer.
+        ;
+        ; Out:
+        ;   A = clobbered
+        ;   Z = 0: data available in the receiver (A != 0)
+        ;   Z = 1: no data available (A = 0)
 
-    ; Read a byte from the receiver.
-    ;
-    ; Out:
-    ;   A = read byte
-    ;
     read = DRIVER::read
+        ; Read a byte from the receiver.
+        ;
+        ; Out:
+        ;   A = read byte
 
-    ; Check if a byte can be sent to the transmitter.
-    ;
-    ; Out:
-    ;   A = clobbered
-    ;   Z = 0: transmitter ready for sending data (A != 0)
-    ;   Z = 1: send not possible (A = 0)
-    ;
     check_tx = DRIVER::check_tx
+        ; Check if a byte can be sent to the transmitter.
+        ;
+        ; Out:
+        ;   A = clobbered
+        ;   Z = 0: transmitter ready for sending data (A != 0)
+        ;   Z = 1: send not possible (A = 0)
 
-    ; Write a byte to the transmitter.
-    ;
-    ; Out:
-    ;   A = preserved
-    ;
     write = DRIVER::write
+        ; Write a byte to the transmitter.
+        ;
+        ; Out:
+        ;   A = preserved
 
-    ; Load the status bits into register A.
-    ;
-    ; Out:
-    ;   A = status bits (IRQ DSR DCD TXE RXF OVR FRM PAR)
-    ;
     load_status = DRIVER::load_status
+        ; Load the status bits into register A.
+        ;
+        ; Out:
+        ;   A = status bits (IRQ DSR DCD TXE RXF OVR FRM PAR)
 
     ; -------------------------------------------------------------
     ; High level convenience wrappers.
@@ -83,7 +76,7 @@ BIOS_UART_S = 1
         ;
         ; Out:
         ;   A = read byte
-        ;
+
         pha
     @wait_for_rx:
         jsr check_rx
@@ -100,7 +93,7 @@ BIOS_UART_S = 1
         ;   A = the byte to write
         ; Out:
         ;   A = clobbered
-        ;
+
         pha
     @wait_for_tx:
         jsr check_tx

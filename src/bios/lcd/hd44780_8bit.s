@@ -23,6 +23,7 @@
 ;    │  D7     │◄────────────────────────►│ PB7     │
 ;    │         │                          │         │
 ;    └─────────┘                          └─────────┘
+;
 ; -----------------------------------------------------------------
 
 .ifndef BIOS_LCD_HD44780_S
@@ -35,9 +36,9 @@ BIOS_LCD_HD44780_S = 1
 .segment "BIOS"
 
     ; Pin mapping LCD control pins -> VIA port A.
-    PIN_EN  = VIA::BIT::P7
-    PIN_RWB = VIA::BIT::P6
-    PIN_RS  = VIA::BIT::P5
+    PIN_EN  = VIA::P7
+    PIN_RWB = VIA::P6
+    PIN_RS  = VIA::P5
     VIA_PORTA_PINS = (PIN_EN | PIN_RWB | PIN_RS)
 
     ; Pin mapping LCD data pins -> VIA port B.
@@ -85,7 +86,7 @@ BIOS_LCD_HD44780_S = 1
         ;   A = clobbered
 
         ; Put the byte on the LCD data bus.
-        sta VIA::REG::PORTB
+        sta VIA::PORTB_REGISTER
 
         ; Set control pins: RWB=0 (write), RS=0 (CMND), EN=0.
         lda #VIA_PORTA_PINS
@@ -109,7 +110,7 @@ BIOS_LCD_HD44780_S = 1
         ; Out:
         ;   A = preserved
 
-        sta VIA::REG::PORTB
+        sta VIA::PORTB_REGISTER
         pha
         
         ; Set control pins: RWB=0 (write), RS=1 (DATA), EN=0.
@@ -146,7 +147,7 @@ BIOS_LCD_HD44780_S = 1
         ; Pulse EN high, read PORTB, then EN low.
         lda #PIN_EN
         jsr VIA::porta_turn_on
-        lda VIA::REG::PORTB            ; Read status byte from the LCD
+        lda VIA::PORTB_REGISTER        ; Read status byte from the LCD
         pha
         lda #PIN_EN
         jsr VIA::porta_turn_off
@@ -161,8 +162,9 @@ BIOS_LCD_HD44780_S = 1
         rts
     .endproc
 
-    ; Wait for the LCD screen to be ready for the next input.
     .proc wait_till_ready
+        ; Wait for the LCD screen to be ready for the next input.
+
         pha
     @loop:
         jsr check_ready

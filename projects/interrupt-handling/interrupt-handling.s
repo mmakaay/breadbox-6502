@@ -19,8 +19,8 @@
         clr_word last_irq_counter
 
         ; Activate interrupts for VIA's CA1 port
-        set_byte VIA::REG::IER, #(VIA::BIT::IER_SET | VIA::BIT::IER_CA1)
-        clr_byte VIA::REG::PCR  ; Trigger interrupt on falling edge
+        set_byte VIA::IER_REGISTER, #(VIA::IER_SET | VIA::IER_CA1)
+        clr_byte VIA::PCR_REGISTER  ; Trigger interrupt on falling edge
 
         ; Configure IRQ handler
         cp_address BIOS::irq_vector, handle_irq
@@ -99,7 +99,7 @@
     handle_irq:
         pha
         inc_word irq_counter  ; Increment the IRQ counter
-        bit VIA::REG::PORTA   ; Read PORTA to clear interrupt
+        bit VIA::PORTA_REGISTER   ; Read PORTA to clear interrupt
         pla
         rti
 

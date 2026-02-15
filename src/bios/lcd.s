@@ -1,5 +1,5 @@
 ; -----------------------------------------------------------------
-; LCD display support
+; LCD display HAL
 ; -----------------------------------------------------------------
 
 .ifndef BIOS_LCD_S
@@ -18,52 +18,46 @@ BIOS_LCD_S = 1
     ; Access to the low level driver API
     ; -------------------------------------------------------------
 
-    ; Initialize the LCD hardware.
-    ;
-    ; Out:
-    ;   A = clobbered 
-    ;
     init = DRIVER::init
+        ; Initialize the LCD hardware.
+        ;
+        ; Out:
+        ;   A = clobbered 
 
-    ; Poll the LCD to see if it is ready for input.
-    ;
-    ; Out:
-    ;   A = 0 if the LCD is ready for input (Z = 1)
-    ;   A != 0 if the LCD is busy (Z = 0)
-    ;
     check_ready = DRIVER::check_ready
+        ; Poll the LCD to see if it is ready for input.
+        ;
+        ; Out:
+        ;   A = 0 if the LCD is ready for input (Z = 1)
+        ;   A != 0 if the LCD is busy (Z = 0)
 
-    ; Write instruction to CMND register.
-    ;
-    ; In:
-    ;   A = instruction byte to write
-    ; Out:
-    ;   A = clobbered
-    ;
     write_instruction = DRIVER::write_instruction
+        ; Write instruction to CMND register.
+        ;
+        ; In:
+        ;   A = instruction byte to write
+        ; Out:
+        ;   A = clobbered
 
-    ; Write byte to DATA register.
-    ;
-    ; In:
-    ;   A = byte to write
-    ; Out:
-    ;   A = preserved
-    ;
     write = DRIVER::write
+        ; Write byte to DATA register.
+        ;
+        ; In:
+        ;   A = byte to write
+        ; Out:
+        ;   A = preserved
 
-    ; Clear the LCD screen (waits for ready).
-    ;
-    ; Out:
-    ;   A = clobbered
-    ;
     clr = DRIVER::clr
+        ; Clear the LCD screen (waits for ready).
+        ;
+        ; Out:
+        ;   A = clobbered
 
-    ; Move LCD output position to home (waits for ready).
-    ;
-    ; Out:
-    ;   A = clobbered
-    ;
     home = DRIVER::home
+        ; Move LCD output position to home (waits for ready).
+        ;
+        ; Out:
+        ;   A = clobbered
 
     ; -------------------------------------------------------------
     ; High level convenience wrappers.
@@ -76,7 +70,7 @@ BIOS_LCD_S = 1
         ;   A = instruction byte to write
         ; Out:
         ;   A = clobbered
-        ;
+
         pha
     @wait:
         jsr check_ready
@@ -93,7 +87,7 @@ BIOS_LCD_S = 1
         ;   A = byte to write
         ; Out:
         ;   A = preserved
-        ;
+
         pha
     @wait:
         jsr check_ready

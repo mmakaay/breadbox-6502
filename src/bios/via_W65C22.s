@@ -1,5 +1,9 @@
 ; -----------------------------------------------------------------
 ; W65C22 VIA (Versatile Interface Adapter)
+;
+; This is an adapter device that is currently not implemented as
+; a HAL layer. I don't think this is required, since projects
+; that I haver seen so far, all use W65C22 ICs.
 ; -----------------------------------------------------------------
 
 .ifndef BIOS_VIA_W65C22_S
@@ -14,20 +18,21 @@ BIOS_VIA_W65C22_S = 1
 
 .scope VIA
 
+.segment "ZEROPAGE"
+
+    tmp_byte: .res 1
+
 .segment "BIOS"
 
     ; Registers
-    .scope REG
-    PORTB     = __VIA_START__ + $0  ; I/O register for port B
-    PORTA     = __VIA_START__ + $1  ; I/O register for port A
-    DDRB      = __VIA_START__ + $2  ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
-    DDRA      = __VIA_START__ + $3  ; Data direction for pins A0 - A7 (bit per pin, 0 = in, 1 = out)
-    PCR       = __VIA_START__ + $c  ; Peripheral Control Register (configure CA1/2, CB1/2)
-    IFR       = __VIA_START__ + $d  ; Interrupt Flag Register (read triggered interrupt)
-    IER       = __VIA_START__ + $e  ; Interrupt Enable Register (configure interrupts)
-    .endscope
+    PORTB_REGISTER = __VIA_START__ + $0 ; I/O register for port B
+    PORTA_REGISTER = __VIA_START__ + $1 ; I/O register for port A
+    DDRB_REGISTER  = __VIA_START__ + $2 ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
+    DDRA_REGISTER  = __VIA_START__ + $3 ; Data direction for pins A0 - A7 (bit per pin, 0 = in, 1 = out)
+    PCR_REGISTER   = __VIA_START__ + $c ; Peripheral Control Register (configure CA1/2, CB1/2)
+    IFR_REGISTER   = __VIA_START__ + $d ; Interrupt Flag Register (read triggered interrupt)
+    IER_REGISTER   = __VIA_START__ + $e ; Interrupt Enable Register (configure interrupts)
 
-    .scope BIT
     ; IER register bits
     IER_SET   = %10000000   
     IER_CLR   = %00000000  
@@ -48,7 +53,6 @@ BIOS_VIA_W65C22_S = 1
     P5        = %00100000
     P6        = %01000000
     P7        = %10000000
-    .endscope
 
     .proc porta_set_inputs
         ; Set data direction to input for the requested pins on port A. 
@@ -65,8 +69,8 @@ BIOS_VIA_W65C22_S = 1
         ;   Port A = requested pins set to input mode, other ports preserved
 
         eor #$ff
-        and VIA::REG::DDRA
-        sta VIA::REG::DDRA
+        and DDRA_REGISTER
+        sta DDRA_REGISTER
         rts
     .endproc
 
@@ -84,8 +88,8 @@ BIOS_VIA_W65C22_S = 1
         ;   A = clobbered
         ;   Port A = requested pins set to output mode, other ports preserved
 
-        ora VIA::REG::DDRA
-        sta VIA::REG::DDRA
+        ora DDRA_REGISTER
+        sta DDRA_REGISTER
         rts
     .endproc
 
@@ -93,28 +97,23 @@ BIOS_VIA_W65C22_S = 1
         ; Set pin values on port A for a selected group of pins.
         ; Pins not selected by the mask are preserved.
         ;
-        ; Note: the port is written twice. In the intermediate state, all
-        ; masked pins are LOW. This is safe for the HD44780 LCD, where
-        ; EN is edge-triggered on HIGH->LOW.
-        ;
         ; Usage:
         ;   lda #(VIA::BIT::P7 | VIA::BIT::P6 | VIA::BIT::P5)  ; mask: pins to update
-        ;   ldx #(VIA::BIT::P7 | VIA::BIT::P5)                  ; values: P7=1, P6=0, P5=1
+        ;   ldx #(VIA::BIT::P7 | VIA::BIT::P5)                 ; values: P7=1, P6=0, P5=1
         ;   jsr VIA::porta_set_pins
         ;
         ; In:
         ;   A = pin mask (1 = update this pin, 0 = preserve)
-        ;   X = pin values (desired state for masked pins)
+        ;   X = pin values (desired state for pins to update)
         ; Out:
         ;   A = clobbered
         ;   X = preserved
 
-        eor #$ff            ; Invert mask to get preserve-mask
-        and REG::PORTA      ; A = preserved pin values (masked pins cleared)
-        sta REG::PORTA      ; Write with masked pins low (intermediate state)
-        txa                 ; A = desired pin values
-        ora REG::PORTA      ; Merge with preserved values
-        sta REG::PORTA      ; Write final result
+        eor #$ff           ; Invert mask to get preserve-mask
+        and PORTA_REGISTER ; A = preserved pin values
+        stx tmp_byte       ; Save X temporarily
+        ora tmp_byte       ; Merge preserved values with desired pin values
+        sta PORTA_REGISTER ; Write final result (single write)
         rts
     .endproc
 
@@ -131,8 +130,8 @@ BIOS_VIA_W65C22_S = 1
         ; Out:
         ;   A = clobbered
 
-        ora REG::PORTA
-        sta REG::PORTA
+        ora PORTA_REGISTER
+        sta PORTA_REGISTER
         rts
     .endproc
 
@@ -150,8 +149,8 @@ BIOS_VIA_W65C22_S = 1
         ;   A = clobbered
 
         eor #$ff
-        and REG::PORTA
-        sta REG::PORTA
+        and PORTA_REGISTER
+        sta PORTA_REGISTER
         rts
     .endproc
 
@@ -168,8 +167,8 @@ BIOS_VIA_W65C22_S = 1
         ; Out:
         ;   A = clobbered
 
-        ora REG::PORTB
-        sta REG::PORTB
+        ora PORTB_REGISTER
+        sta PORTB_REGISTER
         rts
     .endproc
 
@@ -187,8 +186,8 @@ BIOS_VIA_W65C22_S = 1
         ;   A = clobbered
 
         eor #$ff
-        and REG::PORTB
-        sta REG::PORTB
+        and PORTB_REGISTER
+        sta PORTB_REGISTER
         rts
     .endproc
 
@@ -196,26 +195,23 @@ BIOS_VIA_W65C22_S = 1
         ; Set pin values on port B for a selected group of pins.
         ; Pins not selected by the mask are preserved.
         ;
-        ; Note: see porta_set_pins for details on intermediate state.
-        ;
         ; Usage:
-        ;   lda #(VIA::BIT::P7 | VIA::BIT::P6)  ; mask: pins to update
-        ;   ldx #VIA::BIT::P7                    ; values: P7=1, P6=0
+        ;   lda #(VIA::BIT::P7 | VIA::BIT::P6 | VIA::BIT::P5)  ; mask: pins to update
+        ;   ldx #(VIA::BIT::P7 | VIA::BIT::P5)                 ; values: P7=1, P6=0, P5=1
         ;   jsr VIA::portb_set_pins
         ;
         ; In:
         ;   A = pin mask (1 = update this pin, 0 = preserve)
-        ;   X = pin values (desired state for masked pins)
+        ;   X = pin values (desired state for pins to update)
         ; Out:
         ;   A = clobbered
         ;   X = preserved
 
-        eor #$ff            ; Invert mask to get preserve-mask
-        and REG::PORTB      ; A = preserved pin values (masked pins cleared)
-        sta REG::PORTB      ; Write with masked pins low (intermediate state)
-        txa                 ; A = desired pin values
-        ora REG::PORTB      ; Merge with preserved values
-        sta REG::PORTB      ; Write final result
+        eor #$ff           ; Invert mask to get preserve-mask
+        and PORTB_REGISTER ; A = preserved pin values
+        stx tmp_byte       ; Save X temporarily
+        ora tmp_byte       ; Merge preserved values with desired pin values
+        sta PORTB_REGISTER ; Write final result
         rts
     .endproc
 
@@ -234,8 +230,8 @@ BIOS_VIA_W65C22_S = 1
         ;   Port B = requested pins set to input mode, other ports preserved
 
         eor #$ff
-        and VIA::REG::DDRB
-        sta VIA::REG::DDRB
+        and DDRB_REGISTER
+        sta DDRB_REGISTER
         rts
     .endproc
 
@@ -253,8 +249,8 @@ BIOS_VIA_W65C22_S = 1
         ;   A = clobbered
         ;   Port B = requested pins set to output mode, other ports preserved
 
-        ora VIA::REG::DDRB
-        sta VIA::REG::DDRB
+        ora DDRB_REGISTER
+        sta DDRB_REGISTER
         rts
     .endproc
 

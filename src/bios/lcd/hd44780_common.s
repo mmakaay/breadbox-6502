@@ -17,16 +17,14 @@ BIOS_LCD_HD44780_COMMON_S = 1
 BUSY_FLAG = %10000000
 
 .proc clr
-    jsr wait_till_ready
     lda #%00000001   ; Clear screen, set address to 0
-    jsr write_instruction
+    jsr write_instruction_when_ready
     rts
 .endproc
 
 .proc home
-    jsr wait_till_ready
     lda #%00000010   ; Move cursor to home position
-    jsr write_instruction
+    jsr write_instruction_when_ready
     rts
 .endproc
 

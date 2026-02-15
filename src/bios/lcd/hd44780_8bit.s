@@ -60,10 +60,13 @@ BIOS_LCD_HD44780_S = 1
         jsr VIA::porta_set_pins
 
         ; Configure an initial display mode.
+        jsr wait_till_ready
         lda #%00111000   ; Set 8-bit mode, 2 line display, 5x8 font
         jsr write_instruction
+        jsr wait_till_ready
         lda #%00001110   ; Turn display on, cursor on, blink off
         jsr write_instruction
+        jsr wait_till_ready
         lda #%00000110   ; Shift cursor on data, no display shift
         jsr write_instruction
 
@@ -74,19 +77,6 @@ BIOS_LCD_HD44780_S = 1
     .endproc
 
     .proc write_instruction
-        ; Wait for LCD to become ready, and write instruction to CMND register.
-        ;
-        ; In:
-        ;   A = instruction byte to write
-        ; Out:
-        ;   A = clobbered
-
-        jsr wait_till_ready
-
-        ; No rts, fall through to no wait implementation.
-    .endproc
-
-    .proc write_instruction_nowait
         ; Write instruction to CMND register.
         ;
         ; In:
@@ -112,17 +102,6 @@ BIOS_LCD_HD44780_S = 1
     .endproc
 
     .proc write
-        ; Wait for LCD to become ready, and write byte to DATA register.
-        ;
-        ; In:
-        ;   A = byte to write
-
-        jsr wait_till_ready
-
-        ; No rts, fall through to no wait implementation.
-    .endproc
-
-    .proc write_no_wait
         ; Write byte to DATA register.
         ;
         ; In:

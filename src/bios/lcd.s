@@ -25,28 +25,13 @@ BIOS_LCD_S = 1
     ;
     init = DRIVER::init
 
-    ; Clear the LCD screen.
+    ; Poll the LCD to see if it is ready for input.
     ;
     ; Out:
-    ;   A = clobbered
+    ;   A = 0 if the LCD is ready for input (Z = 1)
+    ;   A != 0 if the LCD is busy (Z = 0)
     ;
-    clr = DRIVER::clr
-
-    ; Move LCD output position to home.
-    ;
-    ; Out:
-    ;   A = clobbered
-    ;
-    home = DRIVER::home
-
-    ; Wait for LCD to become ready, and write instruction to CMND register.
-    ;
-    ; In:
-    ;   A = instruction byte to write
-    ; Out:
-    ;   A = clobbered
-    ;
-    write_instruction = DRIVER::write_instruction
+    check_ready = DRIVER::check_ready
 
     ; Write instruction to CMND register.
     ;
@@ -55,33 +40,68 @@ BIOS_LCD_S = 1
     ; Out:
     ;   A = clobbered
     ;
-    write_instruction_nowait = DRIVER::write_instruction_nowait
+    write_instruction = DRIVER::write_instruction
 
-    ; Wait for LCD to become ready, and write byte to DATA register.
+    ; Write byte to DATA register.
     ;
     ; In:
     ;   A = byte to write
+    ; Out:
+    ;   A = preserved
     ;
     write = DRIVER::write
 
-    ; Write byte to DATA register.
+    ; Clear the LCD screen (waits for ready).
     ;
     ; Out:
     ;   A = clobbered
     ;
-    write_no_wait = DRIVER::write_no_wait
+    clr = DRIVER::clr
 
-    ; Poll the LCD to see if it is ready for input.
+    ; Move LCD output position to home (waits for ready).
     ;
     ; Out:
-    ;   A = 0 if the LCD is ready for input
-    ;   A != 0 if the LCD is busy
+    ;   A = clobbered
     ;
-    check_ready = DRIVER::check_ready
+    home = DRIVER::home
 
-    ; Wait for the LCD screen to be ready for the next input.
-    ;
-    wait_till_ready = DRIVER::wait_till_ready
+    ; -------------------------------------------------------------
+    ; High level convenience wrappers.
+    ; -------------------------------------------------------------
+
+    .proc write_instruction_when_ready
+        ; Wait for LCD to become ready, then write instruction to CMND register.
+        ;
+        ; In:
+        ;   A = instruction byte to write
+        ; Out:
+        ;   A = clobbered
+        ;
+        pha
+    @wait:
+        jsr check_ready
+        bne @wait
+        pla
+        jsr write_instruction
+        rts
+    .endproc
+
+    .proc write_when_ready
+        ; Wait for LCD to become ready, then write byte to DATA register.
+        ;
+        ; In:
+        ;   A = byte to write
+        ; Out:
+        ;   A = preserved
+        ;
+        pha
+    @wait:
+        jsr check_ready
+        bne @wait
+        pla
+        jsr write
+        rts
+    .endproc
 
 .endif
 

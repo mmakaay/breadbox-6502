@@ -14,7 +14,7 @@
     @loop:
         lda hello,x
         beq @done
-        jsr LCD::write
+        jsr LCD::write_when_ready
         inx
         jmp @loop
     @done:

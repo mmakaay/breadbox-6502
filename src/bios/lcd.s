@@ -11,13 +11,14 @@ BIOS_LCD_S = 1
 
 .segment "BIOS"
 
+    ; Import the hardware driver.
     .include "bios/lcd/hd44700_8bit.s"
 
     ; Initialize the LCD hardware.
     ;
     ; Out:
     ;   A = clobbered 
-
+    ;
     ; Initialize all pins connected to the LCD for output.
     ; Port A (CMND register) will always be in output mode from there. 
     ; Port B (DATA register) will toggle input/output depending on use.

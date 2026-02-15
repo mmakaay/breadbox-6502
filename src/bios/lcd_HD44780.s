@@ -135,8 +135,6 @@ BIOS_LCD_HD44780_S = 1
         ;
         ; In:
         ;   A = byte to write
-        ; Out:
-        ;   A = clobbered
 
         jsr wait_till_ready
 
@@ -151,6 +149,7 @@ BIOS_LCD_HD44780_S = 1
         sta VIA::REG::PORTB
         
         ; Transfer byte to the data register.
+        pha
         lda VIA::REG::PORTA            ; Enable writing to DATA register
         and #(BIT::PORTA_PINS ^ $ff)
         ora #(BIT::WRITE | BIT::DATA) 
@@ -159,6 +158,7 @@ BIOS_LCD_HD44780_S = 1
         sta VIA::REG::PORTA
         and #(BIT::EN ^ $ff)           ; Turn off enable bit to stop data transfer
         sta VIA::REG::PORTA
+        pla
 
         rts
     .endproc
@@ -181,29 +181,28 @@ BIOS_LCD_HD44780_S = 1
         sta VIA::REG::PORTA
         ora #BIT::EN                   ; Enable LCD data transfer
         sta VIA::REG::PORTA
-        ldx VIA::REG::PORTB            ; Read status byte from the LCD
-        and #(BIT::EN ^ $ff)           ; Disable LCD data transfer
+        lda VIA::REG::PORTB            ; Read status byte from the LCD
+        pha
+        lda VIA::REG::PORTA            ; Disable LCD data transfer
+        and #(BIT::EN ^ $ff)
         sta VIA::REG::PORTA
         
         ; Restore VIA port B for output.
-        lda #BIT::PORTB_PINS           ; Restore VIA port B for output.
+        lda #BIT::PORTB_PINS
         jsr VIA::portb_set_outputs
 
-        txa                            ; Get the status byte that we read 
-        and #BIT::BUSY                 ; Strip all bytes, except the busy bit
+        pla                            ; Get the status byte that we read
+        and #BIT::BUSY                 ; Strip all bits, except the busy bit
 
         rts
     .endproc
 
+    ; Wait for the LCD screen to be ready for the next input.
     .proc wait_till_ready
-        ; Wait for the LCD screen to be ready for the next input.
-
         pha
-
     @loop:
         jsr check_ready
         bne @loop
-
         pla
         rts
     .endproc

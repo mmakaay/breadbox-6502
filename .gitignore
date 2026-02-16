@@ -1,6 +1,8 @@
 **/*.o
 **/a.out
 **/*.bin
+**/*.lst
+**/*.map
 **/*.sw?
 /cc65
 /emulator

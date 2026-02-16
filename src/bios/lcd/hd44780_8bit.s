@@ -55,26 +55,26 @@ BIOS_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Set port B data pins to output.
-        set_byte(GPIO::port, #GPIO::PORTB)
-        set_byte(GPIO::mask, #PORTB_PINS)
+        set_byte GPIO::port, #GPIO::PORTB
+        set_byte GPIO::mask, #PORTB_PINS
         jsr GPIO::set_outputs
 
         ; Set port A control pins to output.
-        set_byte(GPIO::port, #GPIO::PORTA)
-        set_byte(GPIO::mask, #PORTA_PINS)
+        set_byte GPIO::port, #GPIO::PORTA
+        set_byte GPIO::mask, #PORTA_PINS
         jsr GPIO::set_outputs
         
         ; Clear LCD control bits (EN, RW, RS), preserving non-LCD pins.
-        set_byte(GPIO::mask, #PORTA_PINS)
-        set_byte(GPIO::value, #0)
+        set_byte GPIO::mask, #PORTA_PINS
+        set_byte GPIO::value, #0
         jsr GPIO::set_pins
 
         ; Configure an initial display mode.
-        set_byte(byte, #%00111000)         ; Set 8-bit mode, 2 line display, 5x8 font
+        set_byte byte, #%00111000         ; Set 8-bit mode, 2 line display, 5x8 font
         jsr write_instruction_when_ready
-        set_byte(byte, #%00001110)         ; Turn display on, cursor on, blink off
+        set_byte byte, #%00001110         ; Turn display on, cursor on, blink off
         jsr write_instruction_when_ready
-        set_byte(byte, #%00000110)         ; Shift cursor on data, no display shift
+        set_byte byte, #%00000110         ; Shift cursor on data, no display shift
         jsr write_instruction_when_ready
 
         ; Clear the screen.
@@ -95,19 +95,18 @@ BIOS_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Put the full byte on the LCD data bus.
-        set_byte(GPIO::port, #GPIO::PORTB)
-        set_byte(GPIO::value, byte)
+        set_byte GPIO::port, #GPIO::PORTB
+        set_byte GPIO::value, byte
         jsr GPIO::write_port
 
         ; Set control pins: RWB=0 (write), RS=0 (CMND), EN=0.
-        set_byte(GPIO::port, #GPIO_PORTA)
-        set_byte(GPIO::mask, #PORTA_PINS)
-        set_byte(GPIO::value, #0)
+        set_byte GPIO::port, #GPIO::PORTA
+        set_byte GPIO::mask, #PORTA_PINS
+        set_byte GPIO::value, #0
         jsr GPIO::set_pins
 
         ; Pulse EN high then low to trigger data transfer.
-        set_byte(GPIO::mask, #PIN_EN)
-        sta GPIO::mask
+        set_byte GPIO::mask, #PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 
@@ -126,18 +125,18 @@ BIOS_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Put the full byte on the LCD data bus.
-        set_byte(GPIO::port, #GPIO::PORTB)
-        set_byte(GPIO::value, byte)
+        set_byte GPIO::port, #GPIO::PORTB
+        set_byte GPIO::value, byte
         jsr GPIO::write_port
 
         ; Set control pins: RWB=0 (write), RS=1 (DATA), EN=0.
-        set_byte(GPIO::port, #GPIO::PORTA)
-        set_byte(GPIO::mask, #PORTA_PINS)
-        set_byte(GPIO::value, #PINP_RS)
+        set_byte GPIO::port, #GPIO::PORTA
+        set_byte GPIO::mask, #PORTA_PINS
+        set_byte GPIO::value, #PIN_RS
         jsr GPIO::set_pins
 
         ; Pulse EN high then low to trigger data transfer.
-        set_byte(GPIO::mask, #PIN_EN)
+        set_byte GPIO::mask, #PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 
@@ -156,30 +155,30 @@ BIOS_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Configure port B for input, so we can read the status.
-        set_byte(GPIO::port, #GPIO::PORTB)
-        set_byte(GPIO::mask, #PORTB_PINS)
+        set_byte GPIO::port, #GPIO::PORTB
+        set_byte GPIO::mask, #PORTB_PINS
         jsr GPIO::set_inputs
 
         ; Set control pins: RWB=1 (read), RS=0 (CMND), EN=0.
-        set_byte(GPIO::port, #GPIO::PORTA)
-        set_byte(GPIO::mask, #PORTA_PINS)
-        set_byte(GPIO::value, #PIN_RWB)
+        set_byte GPIO::port, #GPIO::PORTA
+        set_byte GPIO::mask, #PORTA_PINS
+        set_byte GPIO::value, #PIN_RWB
         jsr GPIO::set_pins
 
         ; Pulse EN high, read port B, then EN low.
-        set_byte(GPIO::mask, #PIN_EN)
+        set_byte GPIO::mask, #PIN_EN
         jsr GPIO::turn_on
 
-        set_byte(GPIO::port, #GPIO::PORTB)
+        set_byte GPIO::port, #GPIO::PORTB
         jsr GPIO::read_port        ; GPIO::value = status byte from the LCD
 
-        set_byte(GPIO::port, #GPIO::PORTA)
-        set_byte(GPIO::mask, #PIN_EN)
+        set_byte GPIO::port, #GPIO::PORTA
+        set_byte GPIO::mask, #PIN_EN
         jsr GPIO::turn_off
 
         ; Restore port B for output.
-        set_byte(GPIO::port, #GPIO::PORTB)
-        set_byte(GPIO::mask, #PORTB_PINS)
+        set_byte GPIO::port, #GPIO::PORTB
+        set_byte GPIO::mask, #PORTB_PINS
         jsr GPIO::set_outputs
 
         ; Strip all bits except the busy bit and store in LCD::byte.

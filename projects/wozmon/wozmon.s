@@ -6,7 +6,7 @@ INCLUDE_WOZMON = 1
 .import __WOZMON_START__
 
 lcd_text:     .asciiz "Running WozMon"
-console_text: .asciiz "Welcome to WozMon"
+console_text: .byte   "Welcome to WozMon", $0d, $00
 
 main:
     ldx #0
@@ -14,7 +14,7 @@ main:
     lda lcd_text,x
     beq @done
     sta LCD::byte
-    jsr LCD::write_when_ready
+    jsr LCD::write
     inx
     jmp @send_lcd_text
 @done:
@@ -22,13 +22,12 @@ main:
     ldx #0
 @send_console_text:
     lda console_text,x
-    beq @done2
+    beq @start
     sta UART::byte
-    jsr UART::write_when_ready
+    jsr UART::write_text
     inx
     jmp @send_console_text
-@done2:
-    jsr UART::write_crnl_when_ready
 
+@start:
     jmp __WOZMON_START__
 

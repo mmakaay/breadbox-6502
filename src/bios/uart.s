@@ -34,7 +34,7 @@ BIOS_UART_S = 1
     .segment "BIOS"
 
     ; -------------------------------------------------------------
-    ; Access to the low level driver API
+    ; Low level driver API (no waiting)
     ; -------------------------------------------------------------
 
     init = DRIVER::init
@@ -56,8 +56,8 @@ BIOS_UART_S = 1
         ;   UART::byte = non-zero if data available, zero if not
         ;   A, X, Y preserved
 
-    read = DRIVER::read
-        ; Read a byte from the receiver.
+    _read = DRIVER::read
+        ; Read a byte from the receiver (no wait).
         ;
         ; Out:
         ;   UART::byte = received byte
@@ -70,8 +70,8 @@ BIOS_UART_S = 1
         ;   UART::byte = non-zero if ready, zero if busy
         ;   A, X, Y preserved
 
-    write = DRIVER::write
-        ; Write a byte to the transmitter.
+    _write = DRIVER::write
+        ; Write a byte to the transmitter (no wait).
         ;
         ; In (zero page):
         ;   UART::byte = byte to write
@@ -86,10 +86,10 @@ BIOS_UART_S = 1
         ;   A, X, Y preserved
 
     ; -------------------------------------------------------------
-    ; High level convenience wrappers.
+    ; High level API (waits for hardware to be ready)
     ; -------------------------------------------------------------
 
-    .proc read_when_ready
+    .proc read
         ; Wait for a byte in the receiver buffer, then read it.
         ;
         ; Out:
@@ -101,12 +101,12 @@ BIOS_UART_S = 1
         jsr check_rx
         lda byte
         beq @wait_for_rx
-        jsr read
+        jsr _read
         pla
         rts
     .endproc
 
-    .proc write_when_ready
+    .proc write
         ; Wait for transmitter to be ready, then write a byte.
         ;
         ; In (zero page):
@@ -123,26 +123,30 @@ BIOS_UART_S = 1
         beq @wait_for_tx
         pla                    ; Restore the data byte
         sta byte
-        jsr write
+        jsr _write
         pla
         rts
     .endproc
 
-    .proc write_crnl_when_ready
-        ; Wait for transmitter to be ready, and write CRNL (\r\n).
+    .proc write_text
+        ; Text-mode write: if the byte is CR ($0D), send CR+LF.
+        ; For raw/binary output, use write instead.
         ;
+        ; In (zero page):
+        ;   UART::byte = byte to write
         ; Out:
         ;   A, X, Y preserved
 
         pha
-        lda #$0d              ; CR, \r
+        lda byte
+        cmp #$0d              ; Is it CR?
+        bne @raw
+        jsr write             ; Yes, send CR first
+        lda #$0a              ; Then queue LF
         sta byte
-        jsr write_when_ready
-        lda #$0a              ; NL, \n
-        sta byte
-        jsr write_when_ready
+    @raw:
         pla
-        rts
+        jmp write             ; Send byte (LF after CR, or original char)
     .endproc
 
 .endscope

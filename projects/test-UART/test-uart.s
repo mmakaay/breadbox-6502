@@ -53,7 +53,7 @@
         ; Echo byte back via UART transmitter.
         lda LCD::byte
         sta UART::byte
-        jsr UART::write_when_ready
+        jsr UART::write
 
         jmp @loop
     .endproc

@@ -5,13 +5,15 @@
 ; - No hard-coded memory addresses, but using the linker for
 ;   assigning these automatically.
 ; - Serial console is used for output.
-; - To make <ENTER> work on serial, "\r\n" is sent instead of "\n".
-;   Without this, the terminal application had to be configured to
-;   expect only "\n" to get correct output.
-; - The Apple was upper case only I think, resulting in having to
-;   always input upper case addresses/values. The code was updated
-;   to be case-insensitive.
-; - The run comamnd "R" can also be entered in lower case.
+; - Output is written using `UART::write_text`, which expands
+;   CR to CR+LF for correct terminal line endings. Otherwise, the
+;   terminal client does not move to the next line on carriage
+;   return, unless the client is especially configured to treat
+;   "\r" as "\r\n".
+; - The Apple II only supports upper case, resulting in the
+;   the original code also only working with upper case input.
+;   This modified code converts all input to upper case, so
+;   the user can also input lower case characters.
 ; - Like Ben Eater, I made sure that the ECHO routine remained at
 ;   $FFEF, like described in the Apple II manual.
 ;
@@ -43,18 +45,18 @@ BIOS_WOZMON_S = 1
 
     .segment "ZEROPAGE"
 
-    XAML: .res 1                           ; Last "opened" location Low
-    XAMH: .res 1                           ; Last "opened" location High
-    STL:  .res 1                           ; Store address Low
-    STH:  .res 1                           ; Store address High
-    L:    .res 1                           ; Hex value parsing Low
-    H:    .res 1                           ; Hex value parsing High
-    YSAV: .res 1                           ; Used to see if hex value is given
-    MODE: .res 1                           ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
+    XAML: .res 1       ; Last "opened" location Low
+    XAMH: .res 1       ; Last "opened" location High
+    STL:  .res 1       ; Store address Low
+    STH:  .res 1       ; Store address High
+    L:    .res 1       ; Hex value parsing Low
+    H:    .res 1       ; Hex value parsing High
+    YSAV: .res 1       ; Used to see if hex value is given
+    MODE: .res 1       ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
     
     .segment "RAM"
 
-    IN: .res $FF                           ; Input buffer
+    IN: .res $FF      ; Input buffer
 
     .segment "WOZMON"
 
@@ -77,14 +79,15 @@ BIOS_WOZMON_S = 1
                     JSR     ECHO           ; Output it.
 
     GETLINE:
-                    JSR     UART::write_crnl_when_ready
+                    LDA     #$0D           ; CR triggers CR+LF via ECHO.
+                    JSR     ECHO
 
                     LDY     #$01           ; Initialize text index.
     BACKSPACE:      DEY                    ; Back up text index.
                     BMI     GETLINE        ; Beyond start of line, reinitialize.
 
     NEXTCHAR:
-                    JSR     UART::read_when_ready ; Load character. B7 will be '0'.
+                    JSR     UART::read     ; Load character. B7 will be '0'.
                     LDA     UART::byte     ; Get received byte.
                     CMP     #$61           ; Lowercase letter?
                     BCC     @upper
@@ -173,7 +176,8 @@ BIOS_WOZMON_S = 1
 
     NXTPRNT:
                     BNE     PRDATA         ; NE means no address to print.
-                    JSR     UART::write_crnl_when_ready
+                    LDA     #$0D           ; CR triggers CR+LF via ECHO.
+                    JSR     ECHO
                     LDA     XAMH           ; 'Examine index' high-order byte.
                     JSR     PRBYTE         ; Output it in hex format.
                     LDA     XAML           ; Low-order 'examine index' byte.
@@ -218,13 +222,9 @@ BIOS_WOZMON_S = 1
                     BCC     ECHO           ; Yes, output it.
                     ADC     #$06           ; Add offset for letter.
 
-                    NOP
-                    NOP
-                    NOP
-                    NOP
-                    NOP
-                    NOP
-                    NOP
+                    NOP                    ; A bunch of NOP instructions, in order to move
+                    NOP                    ; the ECHO routine to the same location as defined
+                    NOP                    ; in the original Apple II manual ($FFCF).
                     NOP
                     NOP
                     NOP
@@ -234,7 +234,7 @@ BIOS_WOZMON_S = 1
 
     ECHO:
                     STA     UART::byte
-                    JSR     UART::write_when_ready
+                    JSR     UART::write_text
                     RTS
 
 .endscope

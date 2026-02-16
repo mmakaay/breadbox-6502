@@ -27,9 +27,9 @@ BIOS_UART_UM6551_S = 1
 
         ; Configure:
         ; - data = 8 bits, 1 stopbit
-        ; - transmitter baud rate = 19200
+        ; - transmitter baud rate = according to configuration
         ; - receiver baud rate = using transmitter baud rate generator
-        set_byte CTRL_REGISTER, #(LEN8 | STOP1 | B19200 | RCSGEN)
+        set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
 
         ; Configure:
         ; - parity = none

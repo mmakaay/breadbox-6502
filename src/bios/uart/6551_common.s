@@ -85,5 +85,35 @@ B7200      = %00001101       ; Baud rate 7200
 B9600      = %00001110       ; Baud rate 9600
 B19200     = %00001111       ; Baud rate 19200
 
+; -----------------------------------------------------------------
+; Configuration
+;
+; The default configuration uses a baud rate of 19200. This matches
+; the configuration as used by Ben Eater in his LCD display
+; tutorial, making sure that no specific configuration is required
+; to make things work.
+; -----------------------------------------------------------------
+
+.ifndef ::UART_BAUD_RATE
+    ::UART_BAUD_RATE = ::BAUD19200
+.endif
+
+.if ::UART_BAUD_RATE = ::BAUD1200
+    USE_BAUD_RATE = B1200
+.elseif ::UART_BAUD_RATE = ::BAUD2400
+    ::USE_BAUD_RATE = B2400
+.elseif ::UART_BAUD_RATE = ::BAUD4800
+    ::USE_BAUD_RATE = B4800
+.elseif ::UART_BAUD_RATE = ::BAUD7200
+    ::USE_BAUD_RATE = B7200
+.elseif ::UART_BAUD_RATE = ::BAUD9600
+    ::USE_BAUD_RATE = B9600
+.elseif ::UART_BAUD_RATE = ::BAUD19200
+    ::USE_BAUD_RATE = B19200
+.else
+    .error "UART_BAUD_RATE invalid for UM6551 ACIA"
+.endif
+
+
 .endif
 

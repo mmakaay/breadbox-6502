@@ -44,27 +44,27 @@ BIOS_LCD_HD44780_8BIT_S = 1
 .segment "BIOS"
 
     ; -----------------------------------------------------------------
-    ; Pin configuration (override by defining before .include bios.s)
+    ; Pin configuration
     ;
-    ; Ports: GPIO::PORTB = 0, GPIO::PORTA = 1
-    ; Pins:  GPIO::P0 = $01, P1 = $02, P2 = $04, P3 = $08,
-    ;        P4 = $10, P5 = $20, P6 = $40, P7 = $80
+    ; The default configuration matches the configuration as used by
+    ; Ben Eater in his LCD display tutorial, making sure that no
+    ; specific configuration is required to make things work.
     ; -----------------------------------------------------------------
 
     .ifndef LCD_CMND_PORT
-        LCD_CMND_PORT = GPIO::PORTA
+        LCD_CMND_PORT = ::PORTA
     .endif
     .ifndef LCD_DATA_PORT
-        LCD_DATA_PORT = GPIO::PORTB
+        LCD_DATA_PORT = ::PORTB
     .endif
     .ifndef LCD_PIN_RS
-        LCD_PIN_RS = GPIO::P5
+        LCD_PIN_RS = ::P5
     .endif
     .ifndef LCD_PIN_RWB
-        LCD_PIN_RWB = GPIO::P6
+        LCD_PIN_RWB = ::P6
     .endif
     .ifndef LCD_PIN_EN
-        LCD_PIN_EN = GPIO::P7
+        LCD_PIN_EN = ::P7
     .endif
 
     CMND_PORT = LCD_CMND_PORT

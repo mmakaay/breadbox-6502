@@ -43,27 +43,33 @@ BIOS_LCD_HD44780_4BIT_S = 1
 .segment "BIOS"
 
     ; -----------------------------------------------------------------
-    ; Pin configuration (override by defining before .include bios.s)
+    ; Pin configuration
     ;
-    ; Ports: GPIO::PORTB = 0, GPIO::PORTA = 1
-    ; Pins:  GPIO::P0 = $01, P1 = $02, P2 = $04, P3 = $08,
-    ;        P4 = $10, P5 = $20, P6 = $40, P7 = $80
+    ; The default configuration when using the 4 bit driver, matches
+    ; the configuration as used by Ben Eater in his LCD display
+    ; tutorial, making sure that no specific configuration is required
+    ; to make things work.
+    ;
+    ; The pin configuration can be overridden from `config.s`, for
+    ; example to only use pins on VIA port B, and keeping port A
+    ; completely free for other uses. See the `config.s.example` for
+    ; more information on this.
     ; -----------------------------------------------------------------
 
     .ifndef LCD_CMND_PORT
-        LCD_CMND_PORT = GPIO::PORTB
+        LCD_CMND_PORT = ::PORTB
     .endif
     .ifndef LCD_DATA_PORT
-        LCD_DATA_PORT = GPIO::PORTB
+        LCD_DATA_PORT = ::PORTB
     .endif
     .ifndef LCD_PIN_RS
-        LCD_PIN_RS = GPIO::P0
+        LCD_PIN_RS = ::P0
     .endif
     .ifndef LCD_PIN_RWB
-        LCD_PIN_RWB = GPIO::P1
+        LCD_PIN_RWB = ::P1
     .endif
     .ifndef LCD_PIN_EN
-        LCD_PIN_EN = GPIO::P2
+        LCD_PIN_EN = ::P2
     .endif
 
     CMND_PORT = LCD_CMND_PORT

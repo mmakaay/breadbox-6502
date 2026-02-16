@@ -6,6 +6,8 @@ MACROS_S = 1
 .include "cp_address.s"
 .include "cp_word.s"
 .include "inc_word.s"
+.include "pull_axy.s"
+.include "push_axy.s"
 .include "set_byte.s"
 .include "set_word.s"
 

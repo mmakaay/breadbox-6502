@@ -92,11 +92,7 @@ BIOS_LCD_HD44780_4BIT_S = 1
         ; Out:
         ;   A, X, Y preserved
 
-        pha
-        txa
-        pha
-        tya
-        pha
+        push_axy
 
         ; Set command pins to output.
         set_byte GPIO::port, #CMND_PORT
@@ -152,11 +148,7 @@ BIOS_LCD_HD44780_4BIT_S = 1
         ; Clear the screen.
         jsr clr
 
-        pla
-        tay
-        pla
-        tax
-        pla
+        pull_axy
         rts
     .endproc
 

@@ -17,11 +17,7 @@ BIOS_UART_UM6551_S = 1
     byte = UART::byte
 
     .proc init
-        pha
-        txa
-        pha
-        tya
-        pha
+        push_axy
 
         jsr soft_reset
 
@@ -39,20 +35,12 @@ BIOS_UART_UM6551_S = 1
         ; - interrupts = none
         set_byte CMD_REGISTER, #(PAROFF | ECHOOFF | TIC2 | DTRON | IRQOFF)
 
-        pla
-        tay
-        pla
-        tax
-        pla
+        pull_axy
         rts
     .endproc
 
     .proc soft_reset
-        pha
-        txa
-        pha
-        tya
-        pha
+        push_axy
 
         ; Soft reset by writing to the status register.
         clr_byte STATUS_REGISTER
@@ -70,11 +58,7 @@ BIOS_UART_UM6551_S = 1
         dex
         bne @wait
 
-        pla
-        tay
-        pla
-        tax
-        pla
+        pull_axy
         rts
     .endproc
 

@@ -1,6 +1,6 @@
 # 65C02 breadboard computer
 
-This repository contains information and code about my version
+This repository contains information and code for my version
 of Ben Eater's breadboard computer. See Ben's website at
 [https://eater.net](https://eater.net) for many useful resources
 and a very binge-worthy collection of explanation videos (only

@@ -12,16 +12,23 @@ BIOS_S = 1
 ; NMOS 6502 was not that much fun).
 .setcpu "6502"
 
-.include "config.s"
+.segment "BIOS"
+
+; Include general purpose macros, that make it easier to write some
+; often used code fragments.
 .include "macros/macros.s"
-.include "io/w65c22.s"
-.include "gpio.s"
-.include "lcd.s"
-.include "uart.s"
+
+; Include global constants and the configuration file.
+.include "bios/constants.s"
+.include "config.s"
+
+; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+.include "bios/io/w65c22.s"
+.include "bios/gpio.s"
+.include "bios/lcd.s"
+.include "bios/uart.s"
 
 .scope BIOS
-
-.segment "BIOS"
 
     boot:
         ldx #$ff  ; Initialize stack pointer

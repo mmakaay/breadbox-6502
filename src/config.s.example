@@ -1,26 +1,39 @@
-; ----------------------------------------------------------------------
-; LCD display configuration
-; ----------------------------------------------------------------------
+; BIOS configuration
+;
+; All named constants used below (HD44780_8BIT, PORTA, P5, etc.)
+; are defined in bios/constants.s, which is loaded before this
+; file. See that file for the full list of available names.
 
-; The default configuration matches Ben Eater's tutorial configuration,
-; with CMND bus on VIA port A (pins PA5, PA6 and PA7) and DATA bus on
-; VIA port B (pins PB0 - PB7). Uncomment one of the configurations
-; below, or write your own, to use a different setup.
+; --------------------------------------------------------------------
+; LCD display
+; --------------------------------------------------------------------
+;
+; The defaults (no config needed) match Ben Eater's tutorial:
+; 8-bit data bus on port B, command pins on port A (PA5-PA7).
+; See bios/lcd/hd44780_8bit.s for a wiring diagram.
+;
+; To use a different setup, uncomment one of the presets below
+; or write your own.
+;
+; --------------------------------------------------------------------
 
-; This configuration matches Ben Eater's default pin configuration.
-; The difference is that this one uses 4-bit data bus mode.
-; After activating this configuration, it is possible to disonnect
-; wires PB4 - PB7, while still having a working LCD display.
+; Preset: Ben Eater wiring, 4-bit mode
+;
+; Same pin layout as the default, but only the upper four data
+; lines (PB4-PB7) are used. PB0-PB3 can be disconnected.
 
-;LCD_MODE = 4               ; 4-bit data bus mode
-;LCD_CMND_PORT = 1          ; Port A
-;LCD_DATA_PORT = 0          ; Port B
-;LCD_PIN_RS    = %00100000 ; pin bitmask for Register Select (PA5)
-;LCD_PIN_RWB   = %01000000 ; pin bitmask for Read/Write (PA6)
-;LCD_PIN_EN    = %10000000 ; pin bitmask for Enable (PA7)
+;LCD_DRIVER    = HD44780_4BIT
+;LCD_CMND_PORT = PORTA
+;LCD_DATA_PORT = PORTB
+;LCD_PIN_RS    = P5              ; Register Select  (PA5)
+;LCD_PIN_RWB   = P6              ; Read/Write       (PA6)
+;LCD_PIN_EN    = P7              ; Enable           (PA7)
 
-; This configuration has both the DATA bus and the CMND bus on
-; VIA port B, running in 4 bit mode (CMND pins on PB0 - PB2,
-; DATA pins on PB4 - PB7, and PB3 free for other use).
+; Preset: single-port 4-bit mode (all on port B)
+;
+; Command and data share port B. PB0-PB2 for control, PB4-PB7
+; for data, leaving PB3 free for other hardware. Port A is
+; entirely available. See bios/lcd/hd44780_4bit.s for a wiring
+; diagram.
 
-;LCD_MODE = 4
+;LCD_DRIVER    = HD44780_4BIT

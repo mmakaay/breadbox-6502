@@ -16,10 +16,6 @@ BIOS_LCD_HD44780_COMMON_S = 1
 
 .include "bios/bios.s"
 
-.segment "ZEROPAGE"
-
-    byte: .res 1                 ; Input byte for write / write_instruction
-
 .segment "BIOS"
 
     ; LCD control pin mapping (derived from LCD_* configuration).

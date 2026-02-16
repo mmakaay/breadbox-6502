@@ -6,11 +6,11 @@
 ;
 ; Configuration
 ; -------------
-; Define these constants before including bios.s to override defaults.
+; Define these constants in `config.s` to override defaults.
 ;
-;   LCD_MODE      = 4 or 8 (default: 8)
-;   LCD_CMND_PORT = GPIO port for control pins (0=PORTB, 1=PORTA)
-;   LCD_DATA_PORT = GPIO port for data pins (0=PORTB, 1=PORTA)
+;   LCD_DRIVER    = HD44780_8BIT or HD44780_4BIT (default: HD44780_8BIT)
+;   LCD_CMND_PORT = GPIO port for CMND pins (PORTA or PORTB)
+;   LCD_DATA_PORT = GPIO port for DATA pins (PORTA or PORTB)
 ;   LCD_PIN_RS    = pin bitmask for Register Select
 ;   LCD_PIN_RWB   = pin bitmask for Read/Write
 ;   LCD_PIN_EN    = pin bitmask for Enable
@@ -25,29 +25,20 @@ BIOS_LCD_S = 1
 
 .include "bios/bios.s"
 
-; Select the hardware driver.
-.ifndef LCD_MODE
-    LCD_MODE = 8
-.endif
-
-.if LCD_MODE - 8 = 0
-    LCD_DRIVER_8BIT = 1
-.elseif LCD_MODE - 4 = 0
-    LCD_DRIVER_4BIT = 1
-.else
-    .error "LCD_MODE must be 4 or 8"
-.endif
-
 .scope LCD
-
-    .ifdef LCD_DRIVER_8BIT
+    .if ::LCD_DRIVER = ::HD44780_8BIT
         .include "bios/lcd/hd44780_8bit.s"
-    .else
+    .elseif ::LCD_DRIVER = ::HD44780_4BIT
         .include "bios/lcd/hd44780_4bit.s"
+    .else
+        .error "LCD_DRIVER invalid (see bios/constants.s for options)"
     .endif
 
-    ; Zero page parameter interface.
-    byte = DRIVER::byte
+    .segment "ZEROPAGE"
+
+    byte: .res 1 ; Input byte for write / write_instruction
+
+    .segment "BIOS"
 
     ; -------------------------------------------------------------
     ; Access to the low level driver API

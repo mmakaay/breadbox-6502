@@ -44,7 +44,7 @@ BIOS_LCD_HD44780_8BIT_S = 1
 .segment "BIOS"
 
     ; -----------------------------------------------------------------
-    ; Pin configuration
+    ; Configuration
     ;
     ; The default configuration matches the configuration as used by
     ; Ben Eater in his LCD display tutorial, making sure that no
@@ -70,6 +70,10 @@ BIOS_LCD_HD44780_8BIT_S = 1
     CMND_PORT = LCD_CMND_PORT
     DATA_PORT = LCD_DATA_PORT
     DATA_PINS = %11111111
+
+    ; -----------------------------------------------------------------
+    ; Implementation
+    ; -----------------------------------------------------------------
 
     .include "bios/lcd/hd44780_common.s"
 

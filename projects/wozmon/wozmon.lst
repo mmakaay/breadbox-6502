@@ -1,0 +1,3134 @@
+ca65 V2.19 - Git f166ca8ad
+Main file   : wozmon.s
+Current file: wozmon.s
+
+000000r 1               ; This can also go in config.s, to let the BIOS always include wozmon.
+000000r 1               INCLUDE_WOZMON = 1
+000000r 1               
+000000r 1               .include "bios/bios.s"
+000000r 2               ; -----------------------------------------------------------------
+000000r 2               ; BIOS for my Ben Eater-style breadboard computer
+000000r 2               ; -----------------------------------------------------------------
+000000r 2               
+000000r 2               .ifndef BIOS_S
+000000r 2               BIOS_S = 1
+000000r 2               
+000000r 2               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000000r 2               ; is good for compatibility, but also for forced-upon compatibility
+000000r 2               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000000r 2               ; (debugging BRA being skipped instead of actually branching on an
+000000r 2               ; NMOS 6502 was not that much fun).
+000000r 2               .setcpu "6502"
+000000r 2               
+000000r 2               .segment "BIOS"
+000000r 2               
+000000r 2               ; Include general purpose macros, that make it easier to write some
+000000r 2               ; often used code fragments.
+000000r 2               .include "macros/macros.s"
+000000r 3               .ifndef MACROS_S
+000000r 3               MACROS_S = 1
+000000r 3               
+000000r 3               .include "clr_byte.s"
+000000r 4               .ifndef CLEAR8_S
+000000r 4               CLEAR8_S = 1
+000000r 4               
+000000r 4               .include "set_byte.s"
+000000r 5               .ifndef STORE8_S
+000000r 5               STORE8_S = 1
+000000r 5               
+000000r 5               .macro set_byte target, value
+000000r 5                   ; Store an 8 bit value (byte) in a memory position.
+000000r 5                   ;
+000000r 5                   ; In:
+000000r 5                   ;   target = address of the target address
+000000r 5                   ;   value = the ow byte to sture
+000000r 5                   ; Out:
+000000r 5                   ;   target = value
+000000r 5                   ;   A = clobbered
+000000r 5                   lda     value
+000000r 5                   sta     target
+000000r 5               .endmacro
+000000r 5               
+000000r 5               .endif
+000000r 5               
+000000r 4               
+000000r 4               .macro clr_byte target
+000000r 4                   ; Store #00 in a byte.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address of the target address
+000000r 4                   ; Out:
+000000r 4                   ;   target = #0
+000000r 4                   ;   A = clobbered
+000000r 4                   set_byte target, #00
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "clr_word.s"
+000000r 4               .ifndef CLEAR16_S
+000000r 4               CLEAR16_S = 1
+000000r 4               
+000000r 4               .include "set_word.s"
+000000r 5               .ifndef STORE16_S
+000000r 5               STORE16_S = 1
+000000r 5               
+000000r 5               .include "set_byte.s"
+000000r 6               .ifndef STORE8_S
+000000r 6               STORE8_S = 1
+000000r 6               
+000000r 6               .macro set_byte target, value
+000000r 6                   ; Store an 8 bit value (byte) in a memory position.
+000000r 6                   ;
+000000r 6                   ; In:
+000000r 6                   ;   target = address of the target address
+000000r 6                   ;   value = the ow byte to sture
+000000r 6                   ; Out:
+000000r 6                   ;   target = value
+000000r 6                   ;   A = clobbered
+000000r 6                   lda     value
+000000r 6                   sta     target
+000000r 6               .endmacro
+000000r 6               
+000000r 6               .endif
+000000r 6               
+000000r 5               
+000000r 5               .macro set_word target, lo, hi
+000000r 5                   ; Store a 16 bit value (word) in two consecutive memory positions.
+000000r 5                   ;
+000000r 5                   ; In:
+000000r 5                   ;   target = address of the low byte target address
+000000r 5                   ;   lo = the low byte to sture
+000000r 5                   ;   hi = the high byte to store
+000000r 5                   ; Out:
+000000r 5                   ;   target = value of low byte
+000000r 5                   ;   target + 1 = value of high byte
+000000r 5                   ;   A = clobberede7
+000000r 5                   set_byte target, lo
+000000r 5                   set_byte target + 1, hi
+000000r 5               .endmacro
+000000r 5               
+000000r 5               .endif
+000000r 5               
+000000r 4               
+000000r 4               .macro clr_word target
+000000r 4                   ; Store #0000 in a word.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address of the target address
+000000r 4                   ; Out:
+000000r 4                   ;   target = #0000
+000000r 4                   ;   A = clobbered
+000000r 4                   set_word target, #00, #00
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "cp_address.s"
+000000r 4               .ifndef CP_ADDRESS_S
+000000r 4               CP_ADDRESS_S = 1
+000000r 4               
+000000r 4               .include "set_word.s"
+000000r 5               .ifndef STORE16_S
+000000r 5               STORE16_S = 1
+000000r 5               
+000000r 5               .include "set_byte.s"
+000000r 5               
+000000r 5               .macro set_word target, lo, hi
+000000r 5                   ; Store a 16 bit value (word) in two consecutive memory positions.
+000000r 5                   ;
+000000r 5                   ; In:
+000000r 5                   ;   target = address of the low byte target address
+000000r 5                   ;   lo = the low byte to sture
+000000r 5                   ;   hi = the high byte to store
+000000r 5                   ; Out:
+000000r 5                   ;   target = value of low byte
+000000r 5                   ;   target + 1 = value of high byte
+000000r 5                   ;   A = clobberede7
+000000r 5                   set_byte target, lo
+000000r 5                   set_byte target + 1, hi
+000000r 5               .endmacro
+000000r 5               
+000000r 5               .endif
+000000r 5               
+000000r 4               
+000000r 4               .macro cp_address target, source
+000000r 4                   ; Store a 16 bit address in two consecutive memory positions.
+000000r 4                   ;
+000000r 4                   ; This stores the address of the source label (not the
+000000r 4                   ; contents) at that address. Useful for example for setting
+000000r 4                   ; up indirect jump vectors and pointers.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address to store into
+000000r 4                   ;   source = address to take the address from
+000000r 4                   ; Out:
+000000r 4                   ;   target = low byte of source address
+000000r 4                   ;   target + 1 = high byte of source address
+000000r 4                   ;   A = clobbered
+000000r 4                   set_word target, #<source, #>source
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "cp_word.s"
+000000r 4               .ifndef CP_WORD_S
+000000r 4               CP_WORD_S = 1
+000000r 4               
+000000r 4               .macro cp_word target, source
+000000r 4                   ; Copy a 16 bit value (word) from one memory location to another.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address to copy to
+000000r 4                   ;   source = address to copy from
+000000r 4                   ; Out:
+000000r 4                   ;   target = value copied from source
+000000r 4                   ;   source = preserved
+000000r 4                   ;   A = clobbered
+000000r 4                   lda     source
+000000r 4                   sta     target
+000000r 4                   lda     source + 1
+000000r 4                   sta     target + 1
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "inc_word.s"
+000000r 4               .ifndef INC16_S
+000000r 4               INC16_S = 1
+000000r 4               
+000000r 4               .macro inc_word target
+000000r 4                   ; Increment a 16 bit (word) value with 1.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address of the word to increment
+000000r 4                   ; Out:
+000000r 4                   ;   target = value incremented by 1 + carry
+000000r 4                   ;   Carry = set when high byte overflows
+000000r 4                   ;   A = clobbered
+000000r 4                   clc
+000000r 4                   lda     target
+000000r 4                   adc     #1
+000000r 4                   sta     target
+000000r 4                   lda     target+1
+000000r 4                   adc     #0
+000000r 4                   sta     target+1
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "set_byte.s"
+000000r 4               .ifndef STORE8_S
+000000r 4               STORE8_S = 1
+000000r 4               
+000000r 4               .macro set_byte target, value
+000000r 4                   ; Store an 8 bit value (byte) in a memory position.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address of the target address
+000000r 4                   ;   value = the ow byte to sture
+000000r 4                   ; Out:
+000000r 4                   ;   target = value
+000000r 4                   ;   A = clobbered
+000000r 4                   lda     value
+000000r 4                   sta     target
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               .include "set_word.s"
+000000r 4               .ifndef STORE16_S
+000000r 4               STORE16_S = 1
+000000r 4               
+000000r 4               .include "set_byte.s"
+000000r 4               
+000000r 4               .macro set_word target, lo, hi
+000000r 4                   ; Store a 16 bit value (word) in two consecutive memory positions.
+000000r 4                   ;
+000000r 4                   ; In:
+000000r 4                   ;   target = address of the low byte target address
+000000r 4                   ;   lo = the low byte to sture
+000000r 4                   ;   hi = the high byte to store
+000000r 4                   ; Out:
+000000r 4                   ;   target = value of low byte
+000000r 4                   ;   target + 1 = value of high byte
+000000r 4                   ;   A = clobberede7
+000000r 4                   set_byte target, lo
+000000r 4                   set_byte target + 1, hi
+000000r 4               .endmacro
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               
+000000r 3               .endif
+000000r 3               
+000000r 2               
+000000r 2               ; Include global constants and the configuration file.
+000000r 2               .include "bios/constants.s"
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               ; Global constants for use in config.s
+000000r 3               ;
+000000r 3               ; These are loaded before config.s and before any HAL or driver
+000000r 3               ; module, so scoped symbols like GPIO::PORTA are not available
+000000r 3               ; yet at configuration time.
+000000r 3               ;
+000000r 3               ; This file bridges that gap by providing unscoped, human-readable
+000000r 3               ; names for ports, pins and driver identifiers. The HAL and driver
+000000r 3               ; modules reference the same constants internally, so the values
+000000r 3               ; used here translate directly into hardware behaviour.
+000000r 3               ;
+000000r 3               ; Adding a new driver or peripheral? Register its selectable
+000000r 3               ; options here so they can be referenced from config.s.
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               
+000000r 3               .ifndef CONSTANTS_S
+000000r 3               CONSTANTS_S = 1
+000000r 3               
+000000r 3               ; --- LCD driver selection -------------------------------------------
+000000r 3               
+000000r 3               HD44780_8BIT = 1              ; HD44780, 8-bit data bus
+000000r 3               HD44780_4BIT = 2              ; HD44780, 4-bit data bus
+000000r 3               
+000000r 3               ; --- I/O port selection ---------------------------------------------
+000000r 3               
+000000r 3               PORTA = 1
+000000r 3               PORTB = 0
+000000r 3               
+000000r 3               ; --- Pin bitmasks ---------------------------------------------------
+000000r 3               
+000000r 3               P0 = %00000001
+000000r 3               P1 = %00000010
+000000r 3               P2 = %00000100
+000000r 3               P3 = %00001000
+000000r 3               P4 = %00010000
+000000r 3               P5 = %00100000
+000000r 3               P6 = %01000000
+000000r 3               P7 = %10000000
+000000r 3               
+000000r 3               .endif
+000000r 3               
+000000r 2               .include "config.s"
+000000r 3               ; BIOS configuration
+000000r 3               ;
+000000r 3               ; All named constants used below (HD44780_8BIT, PORTA, P5, etc.)
+000000r 3               ; are defined in bios/constants.s, which is loaded before this
+000000r 3               ; file. See that file for the full list of available names.
+000000r 3               
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               ; WozMon
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               
+000000r 3               ; Uncomment the following to include WoZmon in the ROM at $FF00.
+000000r 3               
+000000r 3               ;INCLUDE_WOZMON = 1
+000000r 3               
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               ; LCD display
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               ;
+000000r 3               ; The defaults (no config needed) match Ben Eater's tutorial:
+000000r 3               ; 8-bit data bus on port B, command pins on port A (PA5-PA7).
+000000r 3               ; See bios/lcd/hd44780_8bit.s for a wiring diagram.
+000000r 3               ;
+000000r 3               ; To use a different setup, uncomment one of the presets below
+000000r 3               ; or write your own.
+000000r 3               ;
+000000r 3               ; --------------------------------------------------------------------
+000000r 3               
+000000r 3               ; Preset: Ben Eater wiring, 4-bit mode
+000000r 3               ;
+000000r 3               ; Same pin layout as the default, but only the upper four data
+000000r 3               ; lines (PB4-PB7) are used. PB0-PB3 can be disconnected.
+000000r 3               
+000000r 3               ;LCD_DRIVER    = HD44780_4BIT
+000000r 3               ;LCD_CMND_PORT = PORTA
+000000r 3               ;LCD_DATA_PORT = PORTB
+000000r 3               ;LCD_PIN_RS    = P5              ; Register Select  (PA5)
+000000r 3               ;LCD_PIN_RWB   = P6              ; Read/Write       (PA6)
+000000r 3               ;LCD_PIN_EN    = P7              ; Enable           (PA7)
+000000r 3               
+000000r 3               ; Preset: single-port 4-bit mode (all on port B)
+000000r 3               ;
+000000r 3               ; Command and data share port B. PB0-PB2 for control, PB4-PB7
+000000r 3               ; for data, leaving PB3 free for other hardware. Port A is
+000000r 3               ; entirely available. See bios/lcd/hd44780_4bit.s for a wiring
+000000r 3               ; diagram.
+000000r 3               
+000000r 3               LCD_DRIVER    = HD44780_4BIT
+000000r 3               
+000000r 2               
+000000r 2               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000000r 2               .include "bios/io/w65c22.s"
+000000r 3               ; -----------------------------------------------------------------
+000000r 3               ; W65C22 VIA (Versatile Interface Adapter)
+000000r 3               ;
+000000r 3               ; VIA-specific register addresses and constants.
+000000r 3               ; GPIO port operations are provided by the GPIO HAL (gpio.s).
+000000r 3               ; -----------------------------------------------------------------
+000000r 3               
+000000r 3               .ifndef BIOS_VIA_W65C22_S
+000000r 3               BIOS_VIA_W65C22_S = 1
+000000r 3               
+000000r 3               .include "bios/bios.s"
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               ; BIOS for my Ben Eater-style breadboard computer
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               
+000000r 4               .ifndef BIOS_S
+000000r 4               BIOS_S = 1
+000000r 4               
+000000r 4               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000000r 4               ; is good for compatibility, but also for forced-upon compatibility
+000000r 4               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000000r 4               ; (debugging BRA being skipped instead of actually branching on an
+000000r 4               ; NMOS 6502 was not that much fun).
+000000r 4               .setcpu "6502"
+000000r 4               
+000000r 4               .segment "BIOS"
+000000r 4               
+000000r 4               ; Include general purpose macros, that make it easier to write some
+000000r 4               ; often used code fragments.
+000000r 4               .include "macros/macros.s"
+000000r 4               
+000000r 4               ; Include global constants and the configuration file.
+000000r 4               .include "bios/constants.s"
+000000r 4               .include "config.s"
+000000r 4               
+000000r 4               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000000r 4               .include "bios/io/w65c22.s"
+000000r 4               .include "bios/gpio.s"
+000000r 4               .include "bios/lcd.s"
+000000r 4               .include "bios/uart.s"
+000000r 4               
+000000r 4               ; WozMon.
+000000r 4               .ifdef INCLUDE_WOZMON
+000000r 4                   .include "bios/wozmon.s"
+000000r 4                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000000r 4               .endif
+000000r 4               
+000000r 4               .scope BIOS
+000000r 4               
+000000r 4                   boot:
+000000r 4                       ldx #$ff  ; Initialize stack pointer
+000000r 4                       txs
+000000r 4               
+000000r 4                       jsr init_interrupts
+000000r 4                       jsr LCD::init
+000000r 4                       jsr UART::init
+000000r 4               
+000000r 4                       jmp main  ; Note: `main` must be implemented by application
+000000r 4               
+000000r 4                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000000r 4                   halt:
+000000r 4                       jmp halt
+000000r 4               
+000000r 4               .segment "ZEROPAGE"
+000000r 4               
+000000r 4                   ; Address vectors, that can be modified in order to point
+000000r 4                   ; to a custom interrupt handler.
+000000r 4                   nmi_vector: .res 2
+000000r 4                   irq_vector: .res 2
+000000r 4               
+000000r 4               .segment "BIOS"
+000000r 4               
+000000r 4                   .proc init_interrupts
+000000r 4                       ; Setup the default interrupt handling:
+000000r 4                       ;
+000000r 4                       ; - Interrupts disabled
+000000r 4                       ; - A null NMI handler
+000000r 4                       ; - A null IRQ handler
+000000r 4                       ;
+000000r 4                       ; Out:
+000000r 4                       ;   A = clobbered
+000000r 4               
+000000r 4                       ; Disable interrupts. If code that uses this BIOS requires
+000000r 4                       ; interrupt handling, these must be enabled using `cli`.
+000000r 4                       sei
+000000r 4               
+000000r 4                       cp_address nmi_vector, default_nmi
+000000r 4                       cp_address irq_vector, default_irq
+000000r 4               
+000000r 4                       rts
+000000r 4                   .endproc
+000000r 4               
+000000r 4                   dispatch_nmi:
+000000r 4                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000000r 4               
+000000r 4                   dispatch_irq:
+000000r 4                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000000r 4               
+000000r 4                   default_nmi:
+000000r 4                       rti
+000000r 4               
+000000r 4                   default_irq:
+000000r 4                       rti
+000000r 4               
+000000r 4               .segment "VECTORS"
+000000r 4               
+000000r 4                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000000r 4                   .word boot                 ; Reset vector
+000000r 4                   .word dispatch_irq         ; IRQ vector
+000000r 4               
+000000r 4               .endscope
+000000r 4               
+000000r 4               ; Prevent build warnings when a segment is not used in a project.
+000000r 4               .segment "STACK"
+000000r 4               .segment "RAM"
+000000r 4               .segment "WOZMON"
+000000r 4               
+000000r 4               ; Make sure that code without segment after including this uses CODE.
+000000r 4               .segment "CODE"
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               
+000000r 3               ; The start of the VIA register space is configured in the
+000000r 3               ; linker configuration. The linker provides the starting
+000000r 3               ; address that is imported here.
+000000r 3               .import __IO_START__
+000000r 3               
+000000r 3               .scope VIA
+000000r 3               
+000000r 3               .segment "BIOS"
+000000r 3               
+000000r 3                   ; Port registers (used by GPIO driver via absolute,Y addressing).
+000000r 3                   PORTB_REGISTER = __IO_START__ + $0 ; I/O register for port B
+000000r 3                   PORTA_REGISTER = __IO_START__ + $1 ; I/O register for port A
+000000r 3                   DDRB_REGISTER  = __IO_START__ + $2 ; Data direction for pins B0 - B7 (bit per pin, 0 = in, 1 = out)
+000000r 3                   DDRA_REGISTER  = __IO_START__ + $3 ; Data direction for pins A0 - A7 (bit per pin, 0 = in, 1 = out)
+000000r 3               
+000000r 3                   ; Control registers.
+000000r 3                   PCR_REGISTER   = __IO_START__ + $c ; Peripheral Control Register (configure CA1/2, CB1/2)
+000000r 3                   IFR_REGISTER   = __IO_START__ + $d ; Interrupt Flag Register (read triggered interrupt)
+000000r 3                   IER_REGISTER   = __IO_START__ + $e ; Interrupt Enable Register (configure interrupts)
+000000r 3               
+000000r 3                   ; IER register bits.
+000000r 3                   IER_SET   = %10000000
+000000r 3                   IER_CLR   = %00000000
+000000r 3                   IER_T1    = %01000000   ; Timer 1
+000000r 3                   IER_T2    = %00100000   ; Timer 2
+000000r 3                   IER_CB1   = %00010000
+000000r 3                   IER_CB2   = %00001000
+000000r 3                   IER_SHR   = %00000100   ; Shift register
+000000r 3                   IER_CA1   = %00000010
+000000r 3                   IER_CA2   = %00000001
+000000r 3               
+000000r 3               .endscope
+000000r 3               
+000000r 3               .endif
+000000r 3               
+000000r 2               .include "bios/gpio.s"
+000000r 3               ; -----------------------------------------------------------------
+000000r 3               ; GPIO (General Purpose I/O) abstraction
+000000r 3               ;
+000000r 3               ; Parameters are passed via zero page variables:
+000000r 3               ;
+000000r 3               ;   GPIO::port  = port selector (GPIO::PORTA or GPIO::PORTB)
+000000r 3               ;   GPIO::mask  = pin mask (meaning depends on procedure)
+000000r 3               ;   GPIO::value = pin values / data byte
+000000r 3               ;
+000000r 3               ; All procedures preserve A, X, Y.
+000000r 3               ;
+000000r 3               ; -----------------------------------------------------------------
+000000r 3               
+000000r 3               .ifndef BIOS_GPIO_S
+000000r 3               BIOS_GPIO_S = 1
+000000r 3               
+000000r 3               .include "bios/bios.s"
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               ; BIOS for my Ben Eater-style breadboard computer
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               
+000000r 4               .ifndef BIOS_S
+000000r 4               BIOS_S = 1
+000000r 4               
+000000r 4               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000000r 4               ; is good for compatibility, but also for forced-upon compatibility
+000000r 4               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000000r 4               ; (debugging BRA being skipped instead of actually branching on an
+000000r 4               ; NMOS 6502 was not that much fun).
+000000r 4               .setcpu "6502"
+000000r 4               
+000000r 4               .segment "BIOS"
+000000r 4               
+000000r 4               ; Include general purpose macros, that make it easier to write some
+000000r 4               ; often used code fragments.
+000000r 4               .include "macros/macros.s"
+000000r 4               
+000000r 4               ; Include global constants and the configuration file.
+000000r 4               .include "bios/constants.s"
+000000r 4               .include "config.s"
+000000r 4               
+000000r 4               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000000r 4               .include "bios/io/w65c22.s"
+000000r 4               .include "bios/gpio.s"
+000000r 4               .include "bios/lcd.s"
+000000r 4               .include "bios/uart.s"
+000000r 4               
+000000r 4               ; WozMon.
+000000r 4               .ifdef INCLUDE_WOZMON
+000000r 4                   .include "bios/wozmon.s"
+000000r 4                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000000r 4               .endif
+000000r 4               
+000000r 4               .scope BIOS
+000000r 4               
+000000r 4                   boot:
+000000r 4                       ldx #$ff  ; Initialize stack pointer
+000000r 4                       txs
+000000r 4               
+000000r 4                       jsr init_interrupts
+000000r 4                       jsr LCD::init
+000000r 4                       jsr UART::init
+000000r 4               
+000000r 4                       jmp main  ; Note: `main` must be implemented by application
+000000r 4               
+000000r 4                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000000r 4                   halt:
+000000r 4                       jmp halt
+000000r 4               
+000000r 4               .segment "ZEROPAGE"
+000000r 4               
+000000r 4                   ; Address vectors, that can be modified in order to point
+000000r 4                   ; to a custom interrupt handler.
+000000r 4                   nmi_vector: .res 2
+000000r 4                   irq_vector: .res 2
+000000r 4               
+000000r 4               .segment "BIOS"
+000000r 4               
+000000r 4                   .proc init_interrupts
+000000r 4                       ; Setup the default interrupt handling:
+000000r 4                       ;
+000000r 4                       ; - Interrupts disabled
+000000r 4                       ; - A null NMI handler
+000000r 4                       ; - A null IRQ handler
+000000r 4                       ;
+000000r 4                       ; Out:
+000000r 4                       ;   A = clobbered
+000000r 4               
+000000r 4                       ; Disable interrupts. If code that uses this BIOS requires
+000000r 4                       ; interrupt handling, these must be enabled using `cli`.
+000000r 4                       sei
+000000r 4               
+000000r 4                       cp_address nmi_vector, default_nmi
+000000r 4                       cp_address irq_vector, default_irq
+000000r 4               
+000000r 4                       rts
+000000r 4                   .endproc
+000000r 4               
+000000r 4                   dispatch_nmi:
+000000r 4                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000000r 4               
+000000r 4                   dispatch_irq:
+000000r 4                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000000r 4               
+000000r 4                   default_nmi:
+000000r 4                       rti
+000000r 4               
+000000r 4                   default_irq:
+000000r 4                       rti
+000000r 4               
+000000r 4               .segment "VECTORS"
+000000r 4               
+000000r 4                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000000r 4                   .word boot                 ; Reset vector
+000000r 4                   .word dispatch_irq         ; IRQ vector
+000000r 4               
+000000r 4               .endscope
+000000r 4               
+000000r 4               ; Prevent build warnings when a segment is not used in a project.
+000000r 4               .segment "STACK"
+000000r 4               .segment "RAM"
+000000r 4               .segment "WOZMON"
+000000r 4               
+000000r 4               ; Make sure that code without segment after including this uses CODE.
+000000r 4               .segment "CODE"
+000000r 4               
+000000r 4               .endif
+000000r 4               
+000000r 3               
+000000r 3               .scope GPIO
+000000r 3               
+000000r 3               .segment "ZEROPAGE"
+000000r 3               
+000000r 3  xx               port:  .res 1              ; Port selector (GPIO::PORTA or GPIO::PORTB)
+000001r 3  xx               mask:  .res 1              ; Pin mask (meaning depends on procedure)
+000002r 3  xx               value: .res 1              ; Pin values / data byte
+000003r 3               
+000003r 3               .segment "BIOS"
+000000r 3               
+000000r 3                   ; Import the hardware driver.
+000000r 3                   .include "bios/gpio/w65c22_via.s"
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               ; GPIO driver for W65C22 VIA (Versatile Interface Adapter)
+000000r 4               ;
+000000r 4               ; Implements GPIO operations using absolute,Y addressing on the
+000000r 4               ; VIA port registers. Since PORTA = PORTB + 1 and DDRA = DDRB + 1,
+000000r 4               ; an internal Y register value selects the port:
+000000r 4               ;
+000000r 4               ;   Y = 0 -> port B
+000000r 4               ;   Y = 1 -> port A
+000000r 4               ;
+000000r 4               ; Parameters are passed via zero page variables (GPIO::port,
+000000r 4               ; GPIO::mask, GPIO::value). All procedures preserve A, X, Y.
+000000r 4               ;
+000000r 4               ; -----------------------------------------------------------------
+000000r 4               
+000000r 4               .ifndef BIOS_GPIO_VIA_W65C22_S
+000000r 4               BIOS_GPIO_VIA_W65C22_S = 1
+000000r 4               
+000000r 4               .include "bios/bios.s"
+000000r 5               ; -----------------------------------------------------------------
+000000r 5               ; BIOS for my Ben Eater-style breadboard computer
+000000r 5               ; -----------------------------------------------------------------
+000000r 5               
+000000r 5               .ifndef BIOS_S
+000000r 5               BIOS_S = 1
+000000r 5               
+000000r 5               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000000r 5               ; is good for compatibility, but also for forced-upon compatibility
+000000r 5               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000000r 5               ; (debugging BRA being skipped instead of actually branching on an
+000000r 5               ; NMOS 6502 was not that much fun).
+000000r 5               .setcpu "6502"
+000000r 5               
+000000r 5               .segment "BIOS"
+000000r 5               
+000000r 5               ; Include general purpose macros, that make it easier to write some
+000000r 5               ; often used code fragments.
+000000r 5               .include "macros/macros.s"
+000000r 5               
+000000r 5               ; Include global constants and the configuration file.
+000000r 5               .include "bios/constants.s"
+000000r 5               .include "config.s"
+000000r 5               
+000000r 5               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000000r 5               .include "bios/io/w65c22.s"
+000000r 5               .include "bios/gpio.s"
+000000r 5               .include "bios/lcd.s"
+000000r 5               .include "bios/uart.s"
+000000r 5               
+000000r 5               ; WozMon.
+000000r 5               .ifdef INCLUDE_WOZMON
+000000r 5                   .include "bios/wozmon.s"
+000000r 5                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000000r 5               .endif
+000000r 5               
+000000r 5               .scope BIOS
+000000r 5               
+000000r 5                   boot:
+000000r 5                       ldx #$ff  ; Initialize stack pointer
+000000r 5                       txs
+000000r 5               
+000000r 5                       jsr init_interrupts
+000000r 5                       jsr LCD::init
+000000r 5                       jsr UART::init
+000000r 5               
+000000r 5                       jmp main  ; Note: `main` must be implemented by application
+000000r 5               
+000000r 5                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000000r 5                   halt:
+000000r 5                       jmp halt
+000000r 5               
+000000r 5               .segment "ZEROPAGE"
+000000r 5               
+000000r 5                   ; Address vectors, that can be modified in order to point
+000000r 5                   ; to a custom interrupt handler.
+000000r 5                   nmi_vector: .res 2
+000000r 5                   irq_vector: .res 2
+000000r 5               
+000000r 5               .segment "BIOS"
+000000r 5               
+000000r 5                   .proc init_interrupts
+000000r 5                       ; Setup the default interrupt handling:
+000000r 5                       ;
+000000r 5                       ; - Interrupts disabled
+000000r 5                       ; - A null NMI handler
+000000r 5                       ; - A null IRQ handler
+000000r 5                       ;
+000000r 5                       ; Out:
+000000r 5                       ;   A = clobbered
+000000r 5               
+000000r 5                       ; Disable interrupts. If code that uses this BIOS requires
+000000r 5                       ; interrupt handling, these must be enabled using `cli`.
+000000r 5                       sei
+000000r 5               
+000000r 5                       cp_address nmi_vector, default_nmi
+000000r 5                       cp_address irq_vector, default_irq
+000000r 5               
+000000r 5                       rts
+000000r 5                   .endproc
+000000r 5               
+000000r 5                   dispatch_nmi:
+000000r 5                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000000r 5               
+000000r 5                   dispatch_irq:
+000000r 5                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000000r 5               
+000000r 5                   default_nmi:
+000000r 5                       rti
+000000r 5               
+000000r 5                   default_irq:
+000000r 5                       rti
+000000r 5               
+000000r 5               .segment "VECTORS"
+000000r 5               
+000000r 5                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000000r 5                   .word boot                 ; Reset vector
+000000r 5                   .word dispatch_irq         ; IRQ vector
+000000r 5               
+000000r 5               .endscope
+000000r 5               
+000000r 5               ; Prevent build warnings when a segment is not used in a project.
+000000r 5               .segment "STACK"
+000000r 5               .segment "RAM"
+000000r 5               .segment "WOZMON"
+000000r 5               
+000000r 5               ; Make sure that code without segment after including this uses CODE.
+000000r 5               .segment "CODE"
+000000r 5               
+000000r 5               .endif
+000000r 5               
+000000r 4               
+000000r 4               .scope DRIVER
+000000r 4               
+000000r 4               .segment "BIOS"
+000000r 4               
+000000r 4                   .proc set_inputs
+000000r 4                       ; Set data direction to input for the requested pins.
+000000r 4                       ;
+000000r 4                       ; In (zero page):
+000000r 4                       ;   GPIO::mask = pin mask (1 = set to input)
+000000r 4                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000000r 4                       ; Out:
+000000r 4                       ;   A, X, Y preserved
+000000r 4               
+000000r 4  48                   pha
+000001r 4  98                   tya
+000002r 4  48                   pha
+000003r 4               
+000003r 4  A4 rr                ldy port
+000005r 4  A5 rr                lda mask
+000007r 4  49 FF                eor #$ff
+000009r 4  39 rr rr             and VIA::DDRB_REGISTER,Y
+00000Cr 4  99 rr rr             sta VIA::DDRB_REGISTER,Y
+00000Fr 4               
+00000Fr 4  68                   pla
+000010r 4  A8                   tay
+000011r 4  68                   pla
+000012r 4  60                   rts
+000013r 4                   .endproc
+000013r 4               
+000013r 4                   .proc set_outputs
+000013r 4                       ; Set data direction to output for the requested pins.
+000013r 4                       ;
+000013r 4                       ; In (zero page):
+000013r 4                       ;   GPIO::mask = pin mask (1 = set to output)
+000013r 4                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000013r 4                       ; Out:
+000013r 4                       ;   A, X, Y preserved
+000013r 4               
+000013r 4  48                   pha
+000014r 4  98                   tya
+000015r 4  48                   pha
+000016r 4               
+000016r 4  A4 rr                ldy port
+000018r 4  A5 rr                lda mask
+00001Ar 4  19 rr rr             ora VIA::DDRB_REGISTER,Y
+00001Dr 4  99 rr rr             sta VIA::DDRB_REGISTER,Y
+000020r 4               
+000020r 4  68                   pla
+000021r 4  A8                   tay
+000022r 4  68                   pla
+000023r 4  60                   rts
+000024r 4                   .endproc
+000024r 4               
+000024r 4                   .proc set_pins
+000024r 4                       ; Set pin values for a selected group of pins.
+000024r 4                       ; Pins not selected by the mask are preserved.
+000024r 4                       ;
+000024r 4                       ; In (zero page):
+000024r 4                       ;   GPIO::mask  = pin mask (1 = update this pin, 0 = preserve)
+000024r 4                       ;   GPIO::value = pin values (desired state for masked pins)
+000024r 4                       ;   GPIO::port  = port (GPIO::PORTA or GPIO::PORTB)
+000024r 4                       ; Out:
+000024r 4                       ;   A, X, Y preserved
+000024r 4               
+000024r 4  48                   pha
+000025r 4  98                   tya
+000026r 4  48                   pha
+000027r 4               
+000027r 4  A4 rr                ldy port
+000029r 4  A5 rr                lda mask
+00002Br 4  49 FF                eor #$ff                    ; Invert mask to get preserve-mask
+00002Dr 4  39 rr rr             and VIA::PORTB_REGISTER,Y   ; A = preserved pin values
+000030r 4  05 rr                ora value                   ; Merge with desired pin values
+000032r 4  99 rr rr             sta VIA::PORTB_REGISTER,Y   ; Write final result
+000035r 4               
+000035r 4  68                   pla
+000036r 4  A8                   tay
+000037r 4  68                   pla
+000038r 4  60                   rts
+000039r 4                   .endproc
+000039r 4               
+000039r 4                   .proc turn_on
+000039r 4                       ; Turn on (set HIGH) selected pins.
+000039r 4                       ; Other pins are preserved.
+000039r 4                       ;
+000039r 4                       ; In (zero page):
+000039r 4                       ;   GPIO::mask = pin mask (1 = turn on this pin)
+000039r 4                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000039r 4                       ; Out:
+000039r 4                       ;   A, X, Y preserved
+000039r 4               
+000039r 4  48                   pha
+00003Ar 4  98                   tya
+00003Br 4  48                   pha
+00003Cr 4               
+00003Cr 4  A4 rr                ldy port
+00003Er 4  A5 rr                lda mask
+000040r 4  19 rr rr             ora VIA::PORTB_REGISTER,Y
+000043r 4  99 rr rr             sta VIA::PORTB_REGISTER,Y
+000046r 4               
+000046r 4  68                   pla
+000047r 4  A8                   tay
+000048r 4  68                   pla
+000049r 4  60                   rts
+00004Ar 4                   .endproc
+00004Ar 4               
+00004Ar 4                   .proc turn_off
+00004Ar 4                       ; Turn off (set LOW) selected pins.
+00004Ar 4                       ; Other pins are preserved.
+00004Ar 4                       ;
+00004Ar 4                       ; In (zero page):
+00004Ar 4                       ;   GPIO::mask = pin mask (1 = turn off this pin)
+00004Ar 4                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+00004Ar 4                       ; Out:
+00004Ar 4                       ;   A, X, Y preserved
+00004Ar 4               
+00004Ar 4  48                   pha
+00004Br 4  98                   tya
+00004Cr 4  48                   pha
+00004Dr 4               
+00004Dr 4  A4 rr                ldy port
+00004Fr 4  A5 rr                lda mask
+000051r 4  49 FF                eor #$ff
+000053r 4  39 rr rr             and VIA::PORTB_REGISTER,Y
+000056r 4  99 rr rr             sta VIA::PORTB_REGISTER,Y
+000059r 4               
+000059r 4  68                   pla
+00005Ar 4  A8                   tay
+00005Br 4  68                   pla
+00005Cr 4  60                   rts
+00005Dr 4                   .endproc
+00005Dr 4               
+00005Dr 4                   .proc write_port
+00005Dr 4                       ; Write a full byte to the port register.
+00005Dr 4                       ;
+00005Dr 4                       ; In (zero page):
+00005Dr 4                       ;   GPIO::value = byte to write
+00005Dr 4                       ;   GPIO::port  = port (GPIO::PORTA or GPIO::PORTB)
+00005Dr 4                       ; Out:
+00005Dr 4                       ;   A, X, Y preserved
+00005Dr 4               
+00005Dr 4  48                   pha
+00005Er 4  98                   tya
+00005Fr 4  48                   pha
+000060r 4               
+000060r 4  A4 rr                ldy port
+000062r 4  A5 rr                lda value
+000064r 4  99 rr rr             sta VIA::PORTB_REGISTER,Y
+000067r 4               
+000067r 4  68                   pla
+000068r 4  A8                   tay
+000069r 4  68                   pla
+00006Ar 4  60                   rts
+00006Br 4                   .endproc
+00006Br 4               
+00006Br 4                   .proc read_port
+00006Br 4                       ; Read a full byte from the port register.
+00006Br 4                       ;
+00006Br 4                       ; In (zero page):
+00006Br 4                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+00006Br 4                       ; Out:
+00006Br 4                       ;   GPIO::value = byte read
+00006Br 4                       ;   A, X, Y preserved
+00006Br 4               
+00006Br 4  48                   pha
+00006Cr 4  98                   tya
+00006Dr 4  48                   pha
+00006Er 4               
+00006Er 4  A4 rr                ldy port
+000070r 4  B9 rr rr             lda VIA::PORTB_REGISTER,Y
+000073r 4  85 rr                sta value
+000075r 4               
+000075r 4  68                   pla
+000076r 4  A8                   tay
+000077r 4  68                   pla
+000078r 4  60                   rts
+000079r 4                   .endproc
+000079r 4               
+000079r 4               .endscope
+000079r 4               
+000079r 4               .endif
+000079r 4               
+000079r 3               
+000079r 3                   ; Port selection constants.
+000079r 3                   PORTA = 1
+000079r 3                   PORTB = 0
+000079r 3               
+000079r 3                   ; Pin bit masks.
+000079r 3                   P0 = %00000001
+000079r 3                   P1 = %00000010
+000079r 3                   P2 = %00000100
+000079r 3                   P3 = %00001000
+000079r 3                   P4 = %00010000
+000079r 3                   P5 = %00100000
+000079r 3                   P6 = %01000000
+000079r 3                   P7 = %10000000
+000079r 3               
+000079r 3                   ; -------------------------------------------------------------
+000079r 3                   ; Access to the low level driver API
+000079r 3                   ; -------------------------------------------------------------
+000079r 3               
+000079r 3                   set_inputs = DRIVER::set_inputs
+000079r 3                       ; Set data direction to input for the requested pins.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::mask = pin mask (1 = set to input)
+000079r 3                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   set_outputs = DRIVER::set_outputs
+000079r 3                       ; Set data direction to output for the requested pins.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::mask = pin mask (1 = set to output)
+000079r 3                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   set_pins = DRIVER::set_pins
+000079r 3                       ; Set pin values for a selected group of pins.
+000079r 3                       ; Pins not selected by the mask are preserved.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::mask  = pin mask (1 = update this pin, 0 = preserve)
+000079r 3                       ;   GPIO::value = pin values (desired state for masked pins)
+000079r 3                       ;   GPIO::port  = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   turn_on = DRIVER::turn_on
+000079r 3                       ; Turn on (set HIGH) selected pins.
+000079r 3                       ; Other pins are preserved.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::mask = pin mask (1 = turn on this pin)
+000079r 3                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   turn_off = DRIVER::turn_off
+000079r 3                       ; Turn off (set LOW) selected pins.
+000079r 3                       ; Other pins are preserved.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::mask = pin mask (1 = turn off this pin)
+000079r 3                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   write_port = DRIVER::write_port
+000079r 3                       ; Write a full byte to the port register.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::value = byte to write
+000079r 3                       ;   GPIO::port  = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3                   read_port = DRIVER::read_port
+000079r 3                       ; Read a full byte from the port register.
+000079r 3                       ;
+000079r 3                       ; In (zero page):
+000079r 3                       ;   GPIO::port = port (GPIO::PORTA or GPIO::PORTB)
+000079r 3                       ; Out:
+000079r 3                       ;   GPIO::value = byte read
+000079r 3                       ;   A, X, Y preserved
+000079r 3               
+000079r 3               .endscope
+000079r 3               
+000079r 3               .endif
+000079r 3               
+000079r 2               .include "bios/lcd.s"
+000079r 3               ; -----------------------------------------------------------------
+000079r 3               ; LCD display HAL
+000079r 3               ;
+000079r 3               ; Parameters are passed via zero page: LCD::byte.
+000079r 3               ; All procedures preserve A, X, Y.
+000079r 3               ;
+000079r 3               ; Configuration
+000079r 3               ; -------------
+000079r 3               ; Define these constants in `config.s` to override defaults.
+000079r 3               ;
+000079r 3               ;   LCD_DRIVER    = HD44780_8BIT or HD44780_4BIT (default: HD44780_8BIT)
+000079r 3               ;   LCD_CMND_PORT = GPIO port for CMND pins (PORTA or PORTB)
+000079r 3               ;   LCD_DATA_PORT = GPIO port for DATA pins (PORTA or PORTB)
+000079r 3               ;   LCD_PIN_RS    = pin bitmask for Register Select
+000079r 3               ;   LCD_PIN_RWB   = pin bitmask for Read/Write
+000079r 3               ;   LCD_PIN_EN    = pin bitmask for Enable
+000079r 3               ;
+000079r 3               ; Each driver provides its own defaults. See hd44780_4bit.s and
+000079r 3               ; hd44780_8bit.s for the default pin layouts.
+000079r 3               ;
+000079r 3               ; -----------------------------------------------------------------
+000079r 3               
+000079r 3               .ifndef BIOS_LCD_S
+000079r 3               BIOS_LCD_S = 1
+000079r 3               
+000079r 3               .include "bios/bios.s"
+000079r 4               ; -----------------------------------------------------------------
+000079r 4               ; BIOS for my Ben Eater-style breadboard computer
+000079r 4               ; -----------------------------------------------------------------
+000079r 4               
+000079r 4               .ifndef BIOS_S
+000079r 4               BIOS_S = 1
+000079r 4               
+000079r 4               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000079r 4               ; is good for compatibility, but also for forced-upon compatibility
+000079r 4               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000079r 4               ; (debugging BRA being skipped instead of actually branching on an
+000079r 4               ; NMOS 6502 was not that much fun).
+000079r 4               .setcpu "6502"
+000079r 4               
+000079r 4               .segment "BIOS"
+000079r 4               
+000079r 4               ; Include general purpose macros, that make it easier to write some
+000079r 4               ; often used code fragments.
+000079r 4               .include "macros/macros.s"
+000079r 4               
+000079r 4               ; Include global constants and the configuration file.
+000079r 4               .include "bios/constants.s"
+000079r 4               .include "config.s"
+000079r 4               
+000079r 4               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000079r 4               .include "bios/io/w65c22.s"
+000079r 4               .include "bios/gpio.s"
+000079r 4               .include "bios/lcd.s"
+000079r 4               .include "bios/uart.s"
+000079r 4               
+000079r 4               ; WozMon.
+000079r 4               .ifdef INCLUDE_WOZMON
+000079r 4                   .include "bios/wozmon.s"
+000079r 4                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000079r 4               .endif
+000079r 4               
+000079r 4               .scope BIOS
+000079r 4               
+000079r 4                   boot:
+000079r 4                       ldx #$ff  ; Initialize stack pointer
+000079r 4                       txs
+000079r 4               
+000079r 4                       jsr init_interrupts
+000079r 4                       jsr LCD::init
+000079r 4                       jsr UART::init
+000079r 4               
+000079r 4                       jmp main  ; Note: `main` must be implemented by application
+000079r 4               
+000079r 4                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000079r 4                   halt:
+000079r 4                       jmp halt
+000079r 4               
+000079r 4               .segment "ZEROPAGE"
+000079r 4               
+000079r 4                   ; Address vectors, that can be modified in order to point
+000079r 4                   ; to a custom interrupt handler.
+000079r 4                   nmi_vector: .res 2
+000079r 4                   irq_vector: .res 2
+000079r 4               
+000079r 4               .segment "BIOS"
+000079r 4               
+000079r 4                   .proc init_interrupts
+000079r 4                       ; Setup the default interrupt handling:
+000079r 4                       ;
+000079r 4                       ; - Interrupts disabled
+000079r 4                       ; - A null NMI handler
+000079r 4                       ; - A null IRQ handler
+000079r 4                       ;
+000079r 4                       ; Out:
+000079r 4                       ;   A = clobbered
+000079r 4               
+000079r 4                       ; Disable interrupts. If code that uses this BIOS requires
+000079r 4                       ; interrupt handling, these must be enabled using `cli`.
+000079r 4                       sei
+000079r 4               
+000079r 4                       cp_address nmi_vector, default_nmi
+000079r 4                       cp_address irq_vector, default_irq
+000079r 4               
+000079r 4                       rts
+000079r 4                   .endproc
+000079r 4               
+000079r 4                   dispatch_nmi:
+000079r 4                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000079r 4               
+000079r 4                   dispatch_irq:
+000079r 4                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000079r 4               
+000079r 4                   default_nmi:
+000079r 4                       rti
+000079r 4               
+000079r 4                   default_irq:
+000079r 4                       rti
+000079r 4               
+000079r 4               .segment "VECTORS"
+000079r 4               
+000079r 4                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000079r 4                   .word boot                 ; Reset vector
+000079r 4                   .word dispatch_irq         ; IRQ vector
+000079r 4               
+000079r 4               .endscope
+000079r 4               
+000079r 4               ; Prevent build warnings when a segment is not used in a project.
+000079r 4               .segment "STACK"
+000079r 4               .segment "RAM"
+000079r 4               .segment "WOZMON"
+000079r 4               
+000079r 4               ; Make sure that code without segment after including this uses CODE.
+000079r 4               .segment "CODE"
+000079r 4               
+000079r 4               .endif
+000079r 4               
+000079r 3               
+000079r 3               .scope LCD
+000079r 3                   .if ::LCD_DRIVER = ::HD44780_8BIT
+000079r 3                       .include "bios/lcd/hd44780_8bit.s"
+000079r 3                   .elseif ::LCD_DRIVER = ::HD44780_4BIT
+000079r 3                       .include "bios/lcd/hd44780_4bit.s"
+000079r 4               ; -----------------------------------------------------------------
+000079r 4               ; HD44780 LCD driver (4-bit data bus, 2 line display, 5x8 font)
+000079r 4               ;
+000079r 4               ; Drives the LCD using a 4-bit data bus connection. Each byte is
+000079r 4               ; transferred as two nibbles (high nibble first). Data writes use
+000079r 4               ; pin masking to preserve non-LCD pins on shared ports.
+000079r 4               ;
+000079r 4               ; Pin configuration
+000079r 4               ; -----------------
+000079r 4               ; All pins are configurable via LCD_* constants defined before
+000079r 4               ; including bios.s. Command and data pins can be on the same or
+000079r 4               ; different ports. The default layout uses a single port (port B),
+000079r 4               ; leaving PB3 free for other hardware:
+000079r 4               ;
+000079r 4               ;    HD44780 LCD                           GPIO
+000079r 4               ;    ┌─────────┐                          ┌─────────┐
+000079r 4               ;    │         │                          │         │
+000079r 4               ;    │  RS     │◄─────────────────────────┤ PB0     │ (PIN_RS)
+000079r 4               ;    │  RWB    │◄─────────────────────────┤ PB1     │ (PIN_RWB)
+000079r 4               ;    │  E      │◄─────────────────────────┤ PB2     │ (PIN_EN)
+000079r 4               ;    │         │                     free─┤ PB3     │
+000079r 4               ;    │  D4     │◄────────────────────────►│ PB4     │
+000079r 4               ;    │  D5     │◄────────────────────────►│ PB5     │
+000079r 4               ;    │  D6     │◄────────────────────────►│ PB6     │
+000079r 4               ;    │  D7     │◄────────────────────────►│ PB7     │
+000079r 4               ;    │         │                          │         │
+000079r 4               ;    │  D0-D3  │         n/c              │  PA*    │ (free)
+000079r 4               ;    │         │                          │         │
+000079r 4               ;    └─────────┘                          └─────────┘
+000079r 4               ;
+000079r 4               ; Parameters are passed via zero page: LCD::byte.
+000079r 4               ; All procedures preserve A, X, Y.
+000079r 4               ;
+000079r 4               ; -----------------------------------------------------------------
+000079r 4               
+000079r 4               .ifndef BIOS_LCD_HD44780_4BIT_S
+000079r 4               BIOS_LCD_HD44780_4BIT_S = 1
+000079r 4               
+000079r 4               .include "bios/bios.s"
+000079r 5               ; -----------------------------------------------------------------
+000079r 5               ; BIOS for my Ben Eater-style breadboard computer
+000079r 5               ; -----------------------------------------------------------------
+000079r 5               
+000079r 5               .ifndef BIOS_S
+000079r 5               BIOS_S = 1
+000079r 5               
+000079r 5               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000079r 5               ; is good for compatibility, but also for forced-upon compatibility
+000079r 5               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000079r 5               ; (debugging BRA being skipped instead of actually branching on an
+000079r 5               ; NMOS 6502 was not that much fun).
+000079r 5               .setcpu "6502"
+000079r 5               
+000079r 5               .segment "BIOS"
+000079r 5               
+000079r 5               ; Include general purpose macros, that make it easier to write some
+000079r 5               ; often used code fragments.
+000079r 5               .include "macros/macros.s"
+000079r 5               
+000079r 5               ; Include global constants and the configuration file.
+000079r 5               .include "bios/constants.s"
+000079r 5               .include "config.s"
+000079r 5               
+000079r 5               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000079r 5               .include "bios/io/w65c22.s"
+000079r 5               .include "bios/gpio.s"
+000079r 5               .include "bios/lcd.s"
+000079r 5               .include "bios/uart.s"
+000079r 5               
+000079r 5               ; WozMon.
+000079r 5               .ifdef INCLUDE_WOZMON
+000079r 5                   .include "bios/wozmon.s"
+000079r 5                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000079r 5               .endif
+000079r 5               
+000079r 5               .scope BIOS
+000079r 5               
+000079r 5                   boot:
+000079r 5                       ldx #$ff  ; Initialize stack pointer
+000079r 5                       txs
+000079r 5               
+000079r 5                       jsr init_interrupts
+000079r 5                       jsr LCD::init
+000079r 5                       jsr UART::init
+000079r 5               
+000079r 5                       jmp main  ; Note: `main` must be implemented by application
+000079r 5               
+000079r 5                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000079r 5                   halt:
+000079r 5                       jmp halt
+000079r 5               
+000079r 5               .segment "ZEROPAGE"
+000079r 5               
+000079r 5                   ; Address vectors, that can be modified in order to point
+000079r 5                   ; to a custom interrupt handler.
+000079r 5                   nmi_vector: .res 2
+000079r 5                   irq_vector: .res 2
+000079r 5               
+000079r 5               .segment "BIOS"
+000079r 5               
+000079r 5                   .proc init_interrupts
+000079r 5                       ; Setup the default interrupt handling:
+000079r 5                       ;
+000079r 5                       ; - Interrupts disabled
+000079r 5                       ; - A null NMI handler
+000079r 5                       ; - A null IRQ handler
+000079r 5                       ;
+000079r 5                       ; Out:
+000079r 5                       ;   A = clobbered
+000079r 5               
+000079r 5                       ; Disable interrupts. If code that uses this BIOS requires
+000079r 5                       ; interrupt handling, these must be enabled using `cli`.
+000079r 5                       sei
+000079r 5               
+000079r 5                       cp_address nmi_vector, default_nmi
+000079r 5                       cp_address irq_vector, default_irq
+000079r 5               
+000079r 5                       rts
+000079r 5                   .endproc
+000079r 5               
+000079r 5                   dispatch_nmi:
+000079r 5                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000079r 5               
+000079r 5                   dispatch_irq:
+000079r 5                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000079r 5               
+000079r 5                   default_nmi:
+000079r 5                       rti
+000079r 5               
+000079r 5                   default_irq:
+000079r 5                       rti
+000079r 5               
+000079r 5               .segment "VECTORS"
+000079r 5               
+000079r 5                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000079r 5                   .word boot                 ; Reset vector
+000079r 5                   .word dispatch_irq         ; IRQ vector
+000079r 5               
+000079r 5               .endscope
+000079r 5               
+000079r 5               ; Prevent build warnings when a segment is not used in a project.
+000079r 5               .segment "STACK"
+000079r 5               .segment "RAM"
+000079r 5               .segment "WOZMON"
+000079r 5               
+000079r 5               ; Make sure that code without segment after including this uses CODE.
+000079r 5               .segment "CODE"
+000079r 5               
+000079r 5               .endif
+000079r 5               
+000079r 4               
+000079r 4               .scope DRIVER
+000079r 4               
+000079r 4               .segment "BIOS"
+000079r 4               
+000079r 4                   ; -----------------------------------------------------------------
+000079r 4                   ; Pin configuration
+000079r 4                   ;
+000079r 4                   ; The default configuration when using the 4 bit driver, matches
+000079r 4                   ; the configuration as used by Ben Eater in his LCD display
+000079r 4                   ; tutorial, making sure that no specific configuration is required
+000079r 4                   ; to make things work.
+000079r 4                   ;
+000079r 4                   ; The pin configuration can be overridden from `config.s`, for
+000079r 4                   ; example to only use pins on VIA port B, and keeping port A
+000079r 4                   ; completely free for other uses. See the `config.s.example` for
+000079r 4                   ; more information on this.
+000079r 4                   ; -----------------------------------------------------------------
+000079r 4               
+000079r 4                   .ifndef LCD_CMND_PORT
+000079r 4                       LCD_CMND_PORT = ::PORTB
+000079r 4                   .endif
+000079r 4                   .ifndef LCD_DATA_PORT
+000079r 4                       LCD_DATA_PORT = ::PORTB
+000079r 4                   .endif
+000079r 4                   .ifndef LCD_PIN_RS
+000079r 4                       LCD_PIN_RS = ::P0
+000079r 4                   .endif
+000079r 4                   .ifndef LCD_PIN_RWB
+000079r 4                       LCD_PIN_RWB = ::P1
+000079r 4                   .endif
+000079r 4                   .ifndef LCD_PIN_EN
+000079r 4                       LCD_PIN_EN = ::P2
+000079r 4                   .endif
+000079r 4               
+000079r 4                   CMND_PORT = LCD_CMND_PORT
+000079r 4                   DATA_PORT = LCD_DATA_PORT
+000079r 4                   DATA_PINS = %11110000
+000079r 4               
+000079r 4                   .include "bios/lcd/hd44780_common.s"
+000079r 5               ; -----------------------------------------------------------------
+000079r 5               ; HD44780 LCD common definitions
+000079r 5               ;
+000079r 5               ; Shared between 8-bit and 4-bit HD44780 drivers.
+000079r 5               ; Provides the zero page parameter, control pin constants,
+000079r 5               ; the busy flag constant, and common procedures.
+000079r 5               ;
+000079r 5               ; The including driver must define LCD_PIN_EN, LCD_PIN_RWB,
+000079r 5               ; LCD_PIN_RS (with .ifndef-guarded defaults) before including
+000079r 5               ; this file.
+000079r 5               ;
+000079r 5               ; -----------------------------------------------------------------
+000079r 5               
+000079r 5               .ifndef BIOS_LCD_HD44780_COMMON_S
+000079r 5               BIOS_LCD_HD44780_COMMON_S = 1
+000079r 5               
+000079r 5               .include "bios/bios.s"
+000079r 6               ; -----------------------------------------------------------------
+000079r 6               ; BIOS for my Ben Eater-style breadboard computer
+000079r 6               ; -----------------------------------------------------------------
+000079r 6               
+000079r 6               .ifndef BIOS_S
+000079r 6               BIOS_S = 1
+000079r 6               
+000079r 6               ; I use a W65C02, but let's keep the code compatible for 6502. This
+000079r 6               ; is good for compatibility, but also for forced-upon compatibility
+000079r 6               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+000079r 6               ; (debugging BRA being skipped instead of actually branching on an
+000079r 6               ; NMOS 6502 was not that much fun).
+000079r 6               .setcpu "6502"
+000079r 6               
+000079r 6               .segment "BIOS"
+000079r 6               
+000079r 6               ; Include general purpose macros, that make it easier to write some
+000079r 6               ; often used code fragments.
+000079r 6               .include "macros/macros.s"
+000079r 6               
+000079r 6               ; Include global constants and the configuration file.
+000079r 6               .include "bios/constants.s"
+000079r 6               .include "config.s"
+000079r 6               
+000079r 6               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+000079r 6               .include "bios/io/w65c22.s"
+000079r 6               .include "bios/gpio.s"
+000079r 6               .include "bios/lcd.s"
+000079r 6               .include "bios/uart.s"
+000079r 6               
+000079r 6               ; WozMon.
+000079r 6               .ifdef INCLUDE_WOZMON
+000079r 6                   .include "bios/wozmon.s"
+000079r 6                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+000079r 6               .endif
+000079r 6               
+000079r 6               .scope BIOS
+000079r 6               
+000079r 6                   boot:
+000079r 6                       ldx #$ff  ; Initialize stack pointer
+000079r 6                       txs
+000079r 6               
+000079r 6                       jsr init_interrupts
+000079r 6                       jsr LCD::init
+000079r 6                       jsr UART::init
+000079r 6               
+000079r 6                       jmp main  ; Note: `main` must be implemented by application
+000079r 6               
+000079r 6                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+000079r 6                   halt:
+000079r 6                       jmp halt
+000079r 6               
+000079r 6               .segment "ZEROPAGE"
+000079r 6               
+000079r 6                   ; Address vectors, that can be modified in order to point
+000079r 6                   ; to a custom interrupt handler.
+000079r 6                   nmi_vector: .res 2
+000079r 6                   irq_vector: .res 2
+000079r 6               
+000079r 6               .segment "BIOS"
+000079r 6               
+000079r 6                   .proc init_interrupts
+000079r 6                       ; Setup the default interrupt handling:
+000079r 6                       ;
+000079r 6                       ; - Interrupts disabled
+000079r 6                       ; - A null NMI handler
+000079r 6                       ; - A null IRQ handler
+000079r 6                       ;
+000079r 6                       ; Out:
+000079r 6                       ;   A = clobbered
+000079r 6               
+000079r 6                       ; Disable interrupts. If code that uses this BIOS requires
+000079r 6                       ; interrupt handling, these must be enabled using `cli`.
+000079r 6                       sei
+000079r 6               
+000079r 6                       cp_address nmi_vector, default_nmi
+000079r 6                       cp_address irq_vector, default_irq
+000079r 6               
+000079r 6                       rts
+000079r 6                   .endproc
+000079r 6               
+000079r 6                   dispatch_nmi:
+000079r 6                       jmp (nmi_vector)       ; Forward to configured NMI handler
+000079r 6               
+000079r 6                   dispatch_irq:
+000079r 6                       jmp (irq_vector)       ; Forward to configured IRQ handler
+000079r 6               
+000079r 6                   default_nmi:
+000079r 6                       rti
+000079r 6               
+000079r 6                   default_irq:
+000079r 6                       rti
+000079r 6               
+000079r 6               .segment "VECTORS"
+000079r 6               
+000079r 6                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000079r 6                   .word boot                 ; Reset vector
+000079r 6                   .word dispatch_irq         ; IRQ vector
+000079r 6               
+000079r 6               .endscope
+000079r 6               
+000079r 6               ; Prevent build warnings when a segment is not used in a project.
+000079r 6               .segment "STACK"
+000079r 6               .segment "RAM"
+000079r 6               .segment "WOZMON"
+000079r 6               
+000079r 6               ; Make sure that code without segment after including this uses CODE.
+000079r 6               .segment "CODE"
+000079r 6               
+000079r 6               .endif
+000079r 6               
+000079r 5               
+000079r 5               .segment "BIOS"
+000079r 5               
+000079r 5                   ; LCD control pin mapping (derived from LCD_* configuration).
+000079r 5                   PIN_EN  = LCD_PIN_EN
+000079r 5                   PIN_RWB = LCD_PIN_RWB
+000079r 5                   PIN_RS  = LCD_PIN_RS
+000079r 5                   CMND_PINS = (PIN_EN | PIN_RWB | PIN_RS)
+000079r 5               
+000079r 5                   ; From the datasheet:
+000079r 5                   ; When the busy flag is 1, the device is in the internal operation
+000079r 5                   ; mode, and the next instruction will not be accepted. When reading
+000079r 5                   ; from the DATA register, the busy flag is output to DB7. The next
+000079r 5                   ; instruction must be written after ensuring that the busy flag is 0.
+000079r 5                   BUSY_FLAG = %10000000
+000079r 5               
+000079r 5                   .proc wait_till_ready
+000079r 5                       ; Wait for the LCD screen to be ready for the next input.
+000079r 5                       ;
+000079r 5                       ; Out:
+000079r 5                       ;   A, X, Y preserved
+000079r 5               
+000079r 5  48                   pha
+00007Ar 5                   @loop:
+00007Ar 5  20 rr rr             jsr check_ready
+00007Dr 5  AD rr rr             lda byte
+000080r 5  D0 F8                bne @loop
+000082r 5  68                   pla
+000083r 5  60                   rts
+000084r 5                   .endproc
+000084r 5               
+000084r 5                   .proc clr
+000084r 5                       ; Clear the LCD screen (waits for ready).
+000084r 5                       ;
+000084r 5                       ; Out:
+000084r 5                       ;   A, X, Y preserved
+000084r 5               
+000084r 5  48                   pha
+000085r 5  A9 01 8D rr          set_byte byte, #%00000001   ; Clear screen, set address to 0
+000089r 5  rr           
+00008Ar 5  20 rr rr             jsr write_cmnd_when_ready
+00008Dr 5  68                   pla
+00008Er 5  60                   rts
+00008Fr 5                   .endproc
+00008Fr 5               
+00008Fr 5                   .proc home
+00008Fr 5                       ; Move LCD output position to home (waits for ready).
+00008Fr 5                       ;
+00008Fr 5                       ; Out:
+00008Fr 5                       ;   A, X, Y preserved
+00008Fr 5               
+00008Fr 5  48                   pha
+000090r 5  A9 02 8D rr          set_byte byte, #%00000010   ; Move cursor to home position
+000094r 5  rr           
+000095r 5  20 rr rr             jsr write_cmnd_when_ready
+000098r 5  68                   pla
+000099r 5  60                   rts
+00009Ar 5                   .endproc
+00009Ar 5               
+00009Ar 5               .endif
+00009Ar 5               
+00009Ar 4               
+00009Ar 4                   .proc init
+00009Ar 4                       ; Initialize the LCD in 4-bit mode.
+00009Ar 4                       ;
+00009Ar 4                       ; The LCD powers up in 8-bit mode. A specific nibble sequence
+00009Ar 4                       ; is required to reliably switch to 4-bit mode, regardless of
+00009Ar 4                       ; the LCD's current state.
+00009Ar 4                       ;
+00009Ar 4                       ; Out:
+00009Ar 4                       ;   A, X, Y preserved
+00009Ar 4               
+00009Ar 4  48                   pha
+00009Br 4  8A                   txa
+00009Cr 4  48                   pha
+00009Dr 4  98                   tya
+00009Er 4  48                   pha
+00009Fr 4               
+00009Fr 4                       ; Set command pins to output.
+00009Fr 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+0000A3r 4  A9 07 85 rr          set_byte GPIO::mask, #CMND_PINS
+0000A7r 4  20 rr rr             jsr GPIO::set_outputs
+0000AAr 4               
+0000AAr 4                       ; Set data pins (upper nibble) to output.
+0000AAr 4                       ; Non-data pins on this port are not touched.
+0000AAr 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+0000AEr 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+0000B2r 4  20 rr rr             jsr GPIO::set_outputs
+0000B5r 4               
+0000B5r 4                       ; Clear LCD control bits (EN, RW, RS), preserving non-LCD pins.
+0000B5r 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+0000B9r 4  A9 07 85 rr          set_byte GPIO::mask, #CMND_PINS
+0000BDr 4  A9 00 85 rr          set_byte GPIO::value, #0
+0000C1r 4  20 rr rr             jsr GPIO::set_pins
+0000C4r 4               
+0000C4r 4                       ; --- Special 4-bit initialization sequence ---
+0000C4r 4                       ;
+0000C4r 4                       ; The LCD might be in an unknown state (8-bit mode, or halfway
+0000C4r 4                       ; through a 4-bit transfer). Sending the 8-bit function set
+0000C4r 4                       ; command ($30) three times guarantees a known state, after
+0000C4r 4                       ; which we can reliably switch to 4-bit mode.
+0000C4r 4               
+0000C4r 4                       ; Wait >15ms after power on.
+0000C4r 4  20 rr rr             jsr _delay
+0000C7r 4  20 rr rr             jsr _delay
+0000CAr 4  20 rr rr             jsr _delay
+0000CDr 4               
+0000CDr 4                       ; Function set (8-bit): high nibble 0011 = $30.
+0000CDr 4  A9 30 8D rr          set_byte byte, #$30
+0000D1r 4  rr           
+0000D2r 4  20 rr rr             jsr _send_init_nibble         ; 1st attempt
+0000D5r 4  20 rr rr             jsr _delay                   ; Wait >4.1ms
+0000D8r 4  20 rr rr             jsr _send_init_nibble         ; 2nd attempt
+0000DBr 4  20 rr rr             jsr _delay                   ; Wait >100us (delay is generous)
+0000DEr 4  20 rr rr             jsr _send_init_nibble         ; 3rd attempt
+0000E1r 4  20 rr rr             jsr _delay
+0000E4r 4               
+0000E4r 4                       ; Switch to 4-bit mode: high nibble 0010 = $20.
+0000E4r 4  A9 20 8D rr          set_byte byte, #$20
+0000E8r 4  rr           
+0000E9r 4  20 rr rr             jsr _send_init_nibble
+0000ECr 4               
+0000ECr 4                       ; --- Now in 4-bit mode. Commands sent as two nibbles. ---
+0000ECr 4               
+0000ECr 4  A9 28 8D rr          set_byte byte, #%00101000   ; 4-bit mode, 2 line display, 5x8 font
+0000F0r 4  rr           
+0000F1r 4  20 rr rr             jsr write_cmnd_when_ready
+0000F4r 4  A9 0E 8D rr          set_byte byte, #%00001110   ; Turn display on, cursor on, blink off
+0000F8r 4  rr           
+0000F9r 4  20 rr rr             jsr write_cmnd_when_ready
+0000FCr 4  A9 06 8D rr          set_byte byte, #%00000110   ; Shift cursor on data, no display shift
+000100r 4  rr           
+000101r 4  20 rr rr             jsr write_cmnd_when_ready
+000104r 4               
+000104r 4                       ; Clear the screen.
+000104r 4  20 rr rr             jsr clr
+000107r 4               
+000107r 4  68                   pla
+000108r 4  A8                   tay
+000109r 4  68                   pla
+00010Ar 4  AA                   tax
+00010Br 4  68                   pla
+00010Cr 4  60                   rts
+00010Dr 4                   .endproc
+00010Dr 4               
+00010Dr 4                   .proc write_cmnd
+00010Dr 4                       ; Write instruction to CMND register (two nibbles).
+00010Dr 4                       ;
+00010Dr 4                       ; In (zero page):
+00010Dr 4                       ;   LCD::byte = instruction byte to write
+00010Dr 4                       ; Out:
+00010Dr 4                       ;   A, X, Y preserved
+00010Dr 4               
+00010Dr 4  48                   pha
+00010Er 4               
+00010Er 4                       ; Set control pins: RWB=0 (write), RS=0 (CMND), EN=0.
+00010Er 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+000112r 4  A9 07 85 rr          set_byte GPIO::mask, #CMND_PINS
+000116r 4  A9 00 85 rr          set_byte GPIO::value, #0
+00011Ar 4  20 rr rr             jsr GPIO::set_pins
+00011Dr 4               
+00011Dr 4                       ; Send byte as two nibbles.
+00011Dr 4  20 rr rr             jsr _send_byte
+000120r 4               
+000120r 4  68                   pla
+000121r 4  60                   rts
+000122r 4                   .endproc
+000122r 4               
+000122r 4                   .proc write
+000122r 4                       ; Write byte to DATA register (two nibbles).
+000122r 4                       ;
+000122r 4                       ; In (zero page):
+000122r 4                       ;   LCD::byte = byte to write
+000122r 4                       ; Out:
+000122r 4                       ;   A, X, Y preserved
+000122r 4               
+000122r 4  48                   pha
+000123r 4               
+000123r 4                       ; Set control pins: RWB=0 (write), RS=1 (DATA), EN=0.
+000123r 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+000127r 4  A9 07 85 rr          set_byte GPIO::mask, #CMND_PINS
+00012Br 4  A9 01 85 rr          set_byte GPIO::value, #PIN_RS
+00012Fr 4  20 rr rr             jsr GPIO::set_pins
+000132r 4               
+000132r 4                       ; Send byte as two nibbles.
+000132r 4  20 rr rr             jsr _send_byte
+000135r 4               
+000135r 4  68                   pla
+000136r 4  60                   rts
+000137r 4                   .endproc
+000137r 4               
+000137r 4                   .proc check_ready
+000137r 4                       ; Poll the LCD to see if it is ready for input.
+000137r 4                       ; Reads the busy flag from the high nibble (D7 = PB7).
+000137r 4                       ; The low nibble is clocked out but ignored.
+000137r 4                       ;
+000137r 4                       ; Out:
+000137r 4                       ;   LCD::byte = 0 if the LCD is ready for input
+000137r 4                       ;   LCD::byte != 0 if the LCD is busy
+000137r 4                       ;   A, X, Y preserved
+000137r 4               
+000137r 4  48                   pha
+000138r 4               
+000138r 4                       ; Configure data pins for input (preserves non-data pins).
+000138r 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+00013Cr 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+000140r 4  20 rr rr             jsr GPIO::set_inputs
+000143r 4               
+000143r 4                       ; Set control pins: RWB=1 (read), RS=0 (CMND), EN=0.
+000143r 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+000147r 4  A9 07 85 rr          set_byte GPIO::mask, #CMND_PINS
+00014Br 4  A9 02 85 rr          set_byte GPIO::value, #PIN_RWB
+00014Fr 4  20 rr rr             jsr GPIO::set_pins
+000152r 4               
+000152r 4                       ; High nibble: pulse EN high, read data port (D7=busy flag), EN low.
+000152r 4  A9 04 85 rr          set_byte GPIO::mask, #PIN_EN
+000156r 4  20 rr rr             jsr GPIO::turn_on
+000159r 4               
+000159r 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+00015Dr 4  20 rr rr             jsr GPIO::read_port          ; GPIO::value = data port byte
+000160r 4  A5 rr                lda GPIO::value              ; Save high nibble (has busy flag)
+000162r 4  48                   pha
+000163r 4               
+000163r 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+000167r 4  A9 04 85 rr          set_byte GPIO::mask, #PIN_EN
+00016Br 4  20 rr rr             jsr GPIO::turn_off
+00016Er 4               
+00016Er 4                       ; Low nibble: clock it out (data ignored).
+00016Er 4  20 rr rr             jsr GPIO::turn_on
+000171r 4  20 rr rr             jsr GPIO::turn_off
+000174r 4               
+000174r 4                       ; Restore data pins for output (preserves non-data pins).
+000174r 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+000178r 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+00017Cr 4  20 rr rr             jsr GPIO::set_outputs
+00017Fr 4               
+00017Fr 4                       ; Extract busy flag from the saved high nibble.
+00017Fr 4  68                   pla
+000180r 4  29 80                and #BUSY_FLAG
+000182r 4  8D rr rr             sta byte
+000185r 4               
+000185r 4  68                   pla
+000186r 4  60                   rts
+000187r 4                   .endproc
+000187r 4               
+000187r 4                   ; -----------------------------------------------------------------
+000187r 4                   ; Internal helpers (not part of the driver API)
+000187r 4                   ; -----------------------------------------------------------------
+000187r 4               
+000187r 4                   .proc _send_byte
+000187r 4                       ; Send LCD::byte as two nibbles over the 4-bit data bus.
+000187r 4                       ; Control pins (RS, RWB) must already be set by the caller.
+000187r 4                       ;
+000187r 4                       ; In (zero page):
+000187r 4                       ;   LCD::byte = byte to send
+000187r 4               
+000187r 4                       ; High nibble: upper 4 bits of byte, already in position.
+000187r 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+00018Br 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+00018Fr 4  AD rr rr             lda byte
+000192r 4  29 F0                and #$f0
+000194r 4  85 rr                sta GPIO::value
+000196r 4  20 rr rr             jsr GPIO::set_pins
+000199r 4               
+000199r 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+00019Dr 4  A9 04 85 rr          set_byte GPIO::mask, #PIN_EN
+0001A1r 4  20 rr rr             jsr GPIO::turn_on
+0001A4r 4  20 rr rr             jsr GPIO::turn_off
+0001A7r 4               
+0001A7r 4                       ; Low nibble: lower 4 bits of byte, shifted to upper position.
+0001A7r 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+0001ABr 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+0001AFr 4  AD rr rr             lda byte
+0001B2r 4  0A                   asl
+0001B3r 4  0A                   asl
+0001B4r 4  0A                   asl
+0001B5r 4  0A                   asl
+0001B6r 4  85 rr                sta GPIO::value
+0001B8r 4  20 rr rr             jsr GPIO::set_pins
+0001BBr 4               
+0001BBr 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+0001BFr 4  A9 04 85 rr          set_byte GPIO::mask, #PIN_EN
+0001C3r 4  20 rr rr             jsr GPIO::turn_on
+0001C6r 4  20 rr rr             jsr GPIO::turn_off
+0001C9r 4               
+0001C9r 4  60                   rts
+0001CAr 4                   .endproc
+0001CAr 4               
+0001CAr 4                   .proc _send_init_nibble
+0001CAr 4                       ; Send a single nibble during the initialization sequence
+0001CAr 4                       ; (before 4-bit mode is active). The nibble value is read from
+0001CAr 4                       ; LCD::byte, already positioned for PB4-PB7.
+0001CAr 4                       ; RS and RWB must already be set by the caller.
+0001CAr 4               
+0001CAr 4  A9 00 85 rr          set_byte GPIO::port, #DATA_PORT
+0001CEr 4  A9 F0 85 rr          set_byte GPIO::mask, #DATA_PINS
+0001D2r 4  AD rr rr 85          set_byte GPIO::value, byte
+0001D6r 4  rr           
+0001D7r 4  20 rr rr             jsr GPIO::set_pins
+0001DAr 4               
+0001DAr 4  A9 00 85 rr          set_byte GPIO::port, #CMND_PORT
+0001DEr 4  A9 04 85 rr          set_byte GPIO::mask, #PIN_EN
+0001E2r 4  20 rr rr             jsr GPIO::turn_on
+0001E5r 4  20 rr rr             jsr GPIO::turn_off
+0001E8r 4               
+0001E8r 4  60                   rts
+0001E9r 4                   .endproc
+0001E9r 4               
+0001E9r 4                   .proc _delay
+0001E9r 4                       ; Delay approximately 5ms at 1MHz.
+0001E9r 4                       ; Used during the initialization sequence where busy flag
+0001E9r 4                       ; polling is not yet available.
+0001E9r 4                       ;
+0001E9r 4                       ; Out:
+0001E9r 4                       ;   A preserved
+0001E9r 4                       ;   X, Y clobbered (caller must save if needed)
+0001E9r 4               
+0001E9r 4  A2 05                ldx #5
+0001EBr 4                   @outer:
+0001EBr 4  A0 FA                ldy #250
+0001EDr 4                   @inner:
+0001EDr 4  88                   dey                          ; 2 cycles
+0001EEr 4  D0 FD                bne @inner                   ; 3 cycles (taken)
+0001F0r 4  CA                   dex                          ; 2 cycles
+0001F1r 4  D0 F8                bne @outer                   ; 3 cycles (taken)
+0001F3r 4  60                   rts
+0001F4r 4                   .endproc
+0001F4r 4               
+0001F4r 4               .endscope
+0001F4r 4               
+0001F4r 4               .endif
+0001F4r 4               
+0001F4r 3                   .else
+0001F4r 3                       .error "LCD_DRIVER invalid (see bios/constants.s for options)"
+0001F4r 3                   .endif
+0001F4r 3               
+0001F4r 3                   .segment "ZEROPAGE"
+000003r 3               
+000003r 3  xx               byte: .res 1 ; Input byte for write / write_cmnd
+000004r 3               
+000004r 3                   .segment "BIOS"
+0001F4r 3               
+0001F4r 3                   ; -------------------------------------------------------------
+0001F4r 3                   ; Access to the low level driver API
+0001F4r 3                   ; -------------------------------------------------------------
+0001F4r 3               
+0001F4r 3                   init = DRIVER::init
+0001F4r 3                       ; Initialize the LCD hardware.
+0001F4r 3                       ;
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   check_ready = DRIVER::check_ready
+0001F4r 3                       ; Poll the LCD to see if it is ready for input.
+0001F4r 3                       ;
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   LCD::byte = 0 if the LCD is ready for input
+0001F4r 3                       ;   LCD::byte != 0 if the LCD is busy
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   write_cmnd = DRIVER::write_cmnd
+0001F4r 3                       ; Write instruction to CMND register.
+0001F4r 3                       ;
+0001F4r 3                       ; In (zero page):
+0001F4r 3                       ;   LCD::byte = instruction byte to write
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   write = DRIVER::write
+0001F4r 3                       ; Write byte to DATA register.
+0001F4r 3                       ;
+0001F4r 3                       ; In (zero page):
+0001F4r 3                       ;   LCD::byte = byte to write
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   clr = DRIVER::clr
+0001F4r 3                       ; Clear the LCD screen (waits for ready).
+0001F4r 3                       ;
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   home = DRIVER::home
+0001F4r 3                       ; Move LCD output position to home (waits for ready).
+0001F4r 3                       ;
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3                   ; -------------------------------------------------------------
+0001F4r 3                   ; High level convenience wrappers.
+0001F4r 3                   ; -------------------------------------------------------------
+0001F4r 3               
+0001F4r 3                   .proc write_cmnd_when_ready
+0001F4r 3                       ; Wait for LCD to become ready, then write instruction to
+0001F4r 3                       ; CMND register.
+0001F4r 3                       ;
+0001F4r 3                       ; In (zero page):
+0001F4r 3                       ;   LCD::byte = instruction byte to write
+0001F4r 3                       ; Out:
+0001F4r 3                       ;   A, X, Y preserved
+0001F4r 3               
+0001F4r 3  48                   pha
+0001F5r 3  A5 rr                lda byte                   ; Save the instruction byte
+0001F7r 3  48                   pha
+0001F8r 3                   @wait:
+0001F8r 3  20 rr rr             jsr check_ready
+0001FBr 3  A5 rr                lda byte
+0001FDr 3  D0 F9                bne @wait
+0001FFr 3  68                   pla                        ; Restore the instruction byte
+000200r 3  85 rr                sta byte
+000202r 3  20 rr rr             jsr write_cmnd
+000205r 3  68                   pla
+000206r 3  60                   rts
+000207r 3                   .endproc
+000207r 3               
+000207r 3                   .proc write_when_ready
+000207r 3                       ; Wait for LCD to become ready, then write byte to DATA register.
+000207r 3                       ;
+000207r 3                       ; In (zero page):
+000207r 3                       ;   LCD::byte = byte to write
+000207r 3                       ; Out:
+000207r 3                       ;   A, X, Y preserved
+000207r 3               
+000207r 3  48                   pha
+000208r 3  A5 rr                lda byte                   ; Save the data byte
+00020Ar 3  48                   pha
+00020Br 3                   @wait:
+00020Br 3  20 rr rr             jsr check_ready
+00020Er 3  A5 rr                lda byte
+000210r 3  D0 F9                bne @wait
+000212r 3  68                   pla                        ; Restore the data byte
+000213r 3  85 rr                sta byte
+000215r 3  20 rr rr             jsr write
+000218r 3  68                   pla
+000219r 3  60                   rts
+00021Ar 3                   .endproc
+00021Ar 3               
+00021Ar 3               .endscope
+00021Ar 3               
+00021Ar 3               .endif
+00021Ar 3               
+00021Ar 2               .include "bios/uart.s"
+00021Ar 3               ; -----------------------------------------------------------------
+00021Ar 3               ; UART HAL for RS232 serial communication
+00021Ar 3               ;
+00021Ar 3               ; Parameters are passed via zero page: UART::byte.
+00021Ar 3               ; All procedures preserve A, X, Y.
+00021Ar 3               ;
+00021Ar 3               ; Configuration
+00021Ar 3               ; -------------
+00021Ar 3               ; No configuration required. The UART base address is provided
+00021Ar 3               ; by the linker via __UART_START__.
+00021Ar 3               ;
+00021Ar 3               ; -----------------------------------------------------------------
+00021Ar 3               
+00021Ar 3               .ifndef BIOS_UART_S
+00021Ar 3               BIOS_UART_S = 1
+00021Ar 3               
+00021Ar 3               .include "bios/bios.s"
+00021Ar 4               ; -----------------------------------------------------------------
+00021Ar 4               ; BIOS for my Ben Eater-style breadboard computer
+00021Ar 4               ; -----------------------------------------------------------------
+00021Ar 4               
+00021Ar 4               .ifndef BIOS_S
+00021Ar 4               BIOS_S = 1
+00021Ar 4               
+00021Ar 4               ; I use a W65C02, but let's keep the code compatible for 6502. This
+00021Ar 4               ; is good for compatibility, but also for forced-upon compatibility
+00021Ar 4               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+00021Ar 4               ; (debugging BRA being skipped instead of actually branching on an
+00021Ar 4               ; NMOS 6502 was not that much fun).
+00021Ar 4               .setcpu "6502"
+00021Ar 4               
+00021Ar 4               .segment "BIOS"
+00021Ar 4               
+00021Ar 4               ; Include general purpose macros, that make it easier to write some
+00021Ar 4               ; often used code fragments.
+00021Ar 4               .include "macros/macros.s"
+00021Ar 4               
+00021Ar 4               ; Include global constants and the configuration file.
+00021Ar 4               .include "bios/constants.s"
+00021Ar 4               .include "config.s"
+00021Ar 4               
+00021Ar 4               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+00021Ar 4               .include "bios/io/w65c22.s"
+00021Ar 4               .include "bios/gpio.s"
+00021Ar 4               .include "bios/lcd.s"
+00021Ar 4               .include "bios/uart.s"
+00021Ar 4               
+00021Ar 4               ; WozMon.
+00021Ar 4               .ifdef INCLUDE_WOZMON
+00021Ar 4                   .include "bios/wozmon.s"
+00021Ar 4                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+00021Ar 4               .endif
+00021Ar 4               
+00021Ar 4               .scope BIOS
+00021Ar 4               
+00021Ar 4                   boot:
+00021Ar 4                       ldx #$ff  ; Initialize stack pointer
+00021Ar 4                       txs
+00021Ar 4               
+00021Ar 4                       jsr init_interrupts
+00021Ar 4                       jsr LCD::init
+00021Ar 4                       jsr UART::init
+00021Ar 4               
+00021Ar 4                       jmp main  ; Note: `main` must be implemented by application
+00021Ar 4               
+00021Ar 4                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+00021Ar 4                   halt:
+00021Ar 4                       jmp halt
+00021Ar 4               
+00021Ar 4               .segment "ZEROPAGE"
+00021Ar 4               
+00021Ar 4                   ; Address vectors, that can be modified in order to point
+00021Ar 4                   ; to a custom interrupt handler.
+00021Ar 4                   nmi_vector: .res 2
+00021Ar 4                   irq_vector: .res 2
+00021Ar 4               
+00021Ar 4               .segment "BIOS"
+00021Ar 4               
+00021Ar 4                   .proc init_interrupts
+00021Ar 4                       ; Setup the default interrupt handling:
+00021Ar 4                       ;
+00021Ar 4                       ; - Interrupts disabled
+00021Ar 4                       ; - A null NMI handler
+00021Ar 4                       ; - A null IRQ handler
+00021Ar 4                       ;
+00021Ar 4                       ; Out:
+00021Ar 4                       ;   A = clobbered
+00021Ar 4               
+00021Ar 4                       ; Disable interrupts. If code that uses this BIOS requires
+00021Ar 4                       ; interrupt handling, these must be enabled using `cli`.
+00021Ar 4                       sei
+00021Ar 4               
+00021Ar 4                       cp_address nmi_vector, default_nmi
+00021Ar 4                       cp_address irq_vector, default_irq
+00021Ar 4               
+00021Ar 4                       rts
+00021Ar 4                   .endproc
+00021Ar 4               
+00021Ar 4                   dispatch_nmi:
+00021Ar 4                       jmp (nmi_vector)       ; Forward to configured NMI handler
+00021Ar 4               
+00021Ar 4                   dispatch_irq:
+00021Ar 4                       jmp (irq_vector)       ; Forward to configured IRQ handler
+00021Ar 4               
+00021Ar 4                   default_nmi:
+00021Ar 4                       rti
+00021Ar 4               
+00021Ar 4                   default_irq:
+00021Ar 4                       rti
+00021Ar 4               
+00021Ar 4               .segment "VECTORS"
+00021Ar 4               
+00021Ar 4                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+00021Ar 4                   .word boot                 ; Reset vector
+00021Ar 4                   .word dispatch_irq         ; IRQ vector
+00021Ar 4               
+00021Ar 4               .endscope
+00021Ar 4               
+00021Ar 4               ; Prevent build warnings when a segment is not used in a project.
+00021Ar 4               .segment "STACK"
+00021Ar 4               .segment "RAM"
+00021Ar 4               .segment "WOZMON"
+00021Ar 4               
+00021Ar 4               ; Make sure that code without segment after including this uses CODE.
+00021Ar 4               .segment "CODE"
+00021Ar 4               
+00021Ar 4               .endif
+00021Ar 4               
+00021Ar 3               
+00021Ar 3               .scope UART
+00021Ar 3               
+00021Ar 3                   ; The start of the UART register space is configured in the
+00021Ar 3                   ; linker configuration. The linker provides the starting
+00021Ar 3                   ; address that is imported here.
+00021Ar 3                   .import __UART_START__
+00021Ar 3               
+00021Ar 3                   ; Import the hardware driver.
+00021Ar 3                   .include "bios/uart/um6551.s"
+00021Ar 4               ; -----------------------------------------------------------------
+00021Ar 4               ; UM6551 ACIA (Asynchronous Communications Interface Adapter)
+00021Ar 4               ; -----------------------------------------------------------------
+00021Ar 4               
+00021Ar 4               .ifndef BIOS_UART_UM6551_S
+00021Ar 4               BIOS_UART_UM6551_S = 1
+00021Ar 4               
+00021Ar 4               .include "bios/bios.s"
+00021Ar 5               ; -----------------------------------------------------------------
+00021Ar 5               ; BIOS for my Ben Eater-style breadboard computer
+00021Ar 5               ; -----------------------------------------------------------------
+00021Ar 5               
+00021Ar 5               .ifndef BIOS_S
+00021Ar 5               BIOS_S = 1
+00021Ar 5               
+00021Ar 5               ; I use a W65C02, but let's keep the code compatible for 6502. This
+00021Ar 5               ; is good for compatibility, but also for forced-upon compatibility
+00021Ar 5               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+00021Ar 5               ; (debugging BRA being skipped instead of actually branching on an
+00021Ar 5               ; NMOS 6502 was not that much fun).
+00021Ar 5               .setcpu "6502"
+00021Ar 5               
+00021Ar 5               .segment "BIOS"
+00021Ar 5               
+00021Ar 5               ; Include general purpose macros, that make it easier to write some
+00021Ar 5               ; often used code fragments.
+00021Ar 5               .include "macros/macros.s"
+00021Ar 5               
+00021Ar 5               ; Include global constants and the configuration file.
+00021Ar 5               .include "bios/constants.s"
+00021Ar 5               .include "config.s"
+00021Ar 5               
+00021Ar 5               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+00021Ar 5               .include "bios/io/w65c22.s"
+00021Ar 5               .include "bios/gpio.s"
+00021Ar 5               .include "bios/lcd.s"
+00021Ar 5               .include "bios/uart.s"
+00021Ar 5               
+00021Ar 5               ; WozMon.
+00021Ar 5               .ifdef INCLUDE_WOZMON
+00021Ar 5                   .include "bios/wozmon.s"
+00021Ar 5                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+00021Ar 5               .endif
+00021Ar 5               
+00021Ar 5               .scope BIOS
+00021Ar 5               
+00021Ar 5                   boot:
+00021Ar 5                       ldx #$ff  ; Initialize stack pointer
+00021Ar 5                       txs
+00021Ar 5               
+00021Ar 5                       jsr init_interrupts
+00021Ar 5                       jsr LCD::init
+00021Ar 5                       jsr UART::init
+00021Ar 5               
+00021Ar 5                       jmp main  ; Note: `main` must be implemented by application
+00021Ar 5               
+00021Ar 5                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+00021Ar 5                   halt:
+00021Ar 5                       jmp halt
+00021Ar 5               
+00021Ar 5               .segment "ZEROPAGE"
+00021Ar 5               
+00021Ar 5                   ; Address vectors, that can be modified in order to point
+00021Ar 5                   ; to a custom interrupt handler.
+00021Ar 5                   nmi_vector: .res 2
+00021Ar 5                   irq_vector: .res 2
+00021Ar 5               
+00021Ar 5               .segment "BIOS"
+00021Ar 5               
+00021Ar 5                   .proc init_interrupts
+00021Ar 5                       ; Setup the default interrupt handling:
+00021Ar 5                       ;
+00021Ar 5                       ; - Interrupts disabled
+00021Ar 5                       ; - A null NMI handler
+00021Ar 5                       ; - A null IRQ handler
+00021Ar 5                       ;
+00021Ar 5                       ; Out:
+00021Ar 5                       ;   A = clobbered
+00021Ar 5               
+00021Ar 5                       ; Disable interrupts. If code that uses this BIOS requires
+00021Ar 5                       ; interrupt handling, these must be enabled using `cli`.
+00021Ar 5                       sei
+00021Ar 5               
+00021Ar 5                       cp_address nmi_vector, default_nmi
+00021Ar 5                       cp_address irq_vector, default_irq
+00021Ar 5               
+00021Ar 5                       rts
+00021Ar 5                   .endproc
+00021Ar 5               
+00021Ar 5                   dispatch_nmi:
+00021Ar 5                       jmp (nmi_vector)       ; Forward to configured NMI handler
+00021Ar 5               
+00021Ar 5                   dispatch_irq:
+00021Ar 5                       jmp (irq_vector)       ; Forward to configured IRQ handler
+00021Ar 5               
+00021Ar 5                   default_nmi:
+00021Ar 5                       rti
+00021Ar 5               
+00021Ar 5                   default_irq:
+00021Ar 5                       rti
+00021Ar 5               
+00021Ar 5               .segment "VECTORS"
+00021Ar 5               
+00021Ar 5                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+00021Ar 5                   .word boot                 ; Reset vector
+00021Ar 5                   .word dispatch_irq         ; IRQ vector
+00021Ar 5               
+00021Ar 5               .endscope
+00021Ar 5               
+00021Ar 5               ; Prevent build warnings when a segment is not used in a project.
+00021Ar 5               .segment "STACK"
+00021Ar 5               .segment "RAM"
+00021Ar 5               .segment "WOZMON"
+00021Ar 5               
+00021Ar 5               ; Make sure that code without segment after including this uses CODE.
+00021Ar 5               .segment "CODE"
+00021Ar 5               
+00021Ar 5               .endif
+00021Ar 5               
+00021Ar 4               
+00021Ar 4               .segment "BIOS"
+00021Ar 4               
+00021Ar 4               .scope DRIVER
+00021Ar 4               
+00021Ar 4                   .include "bios/uart/6551_common.s"
+00021Ar 5               ; -----------------------------------------------------------------
+00021Ar 5               ; Common code for 6551 ACIA devices
+00021Ar 5               ; -----------------------------------------------------------------
+00021Ar 5               
+00021Ar 5               .ifndef BIOS_UART_6551_COMMON_S
+00021Ar 5               BIOS_UART_6551_COMMON_S = 1
+00021Ar 5               
+00021Ar 5               .include "bios/bios.s"
+00021Ar 6               ; -----------------------------------------------------------------
+00021Ar 6               ; BIOS for my Ben Eater-style breadboard computer
+00021Ar 6               ; -----------------------------------------------------------------
+00021Ar 6               
+00021Ar 6               .ifndef BIOS_S
+00021Ar 6               BIOS_S = 1
+00021Ar 6               
+00021Ar 6               ; I use a W65C02, but let's keep the code compatible for 6502. This
+00021Ar 6               ; is good for compatibility, but also for forced-upon compatibility
+00021Ar 6               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+00021Ar 6               ; (debugging BRA being skipped instead of actually branching on an
+00021Ar 6               ; NMOS 6502 was not that much fun).
+00021Ar 6               .setcpu "6502"
+00021Ar 6               
+00021Ar 6               .segment "BIOS"
+00021Ar 6               
+00021Ar 6               ; Include general purpose macros, that make it easier to write some
+00021Ar 6               ; often used code fragments.
+00021Ar 6               .include "macros/macros.s"
+00021Ar 6               
+00021Ar 6               ; Include global constants and the configuration file.
+00021Ar 6               .include "bios/constants.s"
+00021Ar 6               .include "config.s"
+00021Ar 6               
+00021Ar 6               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+00021Ar 6               .include "bios/io/w65c22.s"
+00021Ar 6               .include "bios/gpio.s"
+00021Ar 6               .include "bios/lcd.s"
+00021Ar 6               .include "bios/uart.s"
+00021Ar 6               
+00021Ar 6               ; WozMon.
+00021Ar 6               .ifdef INCLUDE_WOZMON
+00021Ar 6                   .include "bios/wozmon.s"
+00021Ar 6                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+00021Ar 6               .endif
+00021Ar 6               
+00021Ar 6               .scope BIOS
+00021Ar 6               
+00021Ar 6                   boot:
+00021Ar 6                       ldx #$ff  ; Initialize stack pointer
+00021Ar 6                       txs
+00021Ar 6               
+00021Ar 6                       jsr init_interrupts
+00021Ar 6                       jsr LCD::init
+00021Ar 6                       jsr UART::init
+00021Ar 6               
+00021Ar 6                       jmp main  ; Note: `main` must be implemented by application
+00021Ar 6               
+00021Ar 6                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+00021Ar 6                   halt:
+00021Ar 6                       jmp halt
+00021Ar 6               
+00021Ar 6               .segment "ZEROPAGE"
+00021Ar 6               
+00021Ar 6                   ; Address vectors, that can be modified in order to point
+00021Ar 6                   ; to a custom interrupt handler.
+00021Ar 6                   nmi_vector: .res 2
+00021Ar 6                   irq_vector: .res 2
+00021Ar 6               
+00021Ar 6               .segment "BIOS"
+00021Ar 6               
+00021Ar 6                   .proc init_interrupts
+00021Ar 6                       ; Setup the default interrupt handling:
+00021Ar 6                       ;
+00021Ar 6                       ; - Interrupts disabled
+00021Ar 6                       ; - A null NMI handler
+00021Ar 6                       ; - A null IRQ handler
+00021Ar 6                       ;
+00021Ar 6                       ; Out:
+00021Ar 6                       ;   A = clobbered
+00021Ar 6               
+00021Ar 6                       ; Disable interrupts. If code that uses this BIOS requires
+00021Ar 6                       ; interrupt handling, these must be enabled using `cli`.
+00021Ar 6                       sei
+00021Ar 6               
+00021Ar 6                       cp_address nmi_vector, default_nmi
+00021Ar 6                       cp_address irq_vector, default_irq
+00021Ar 6               
+00021Ar 6                       rts
+00021Ar 6                   .endproc
+00021Ar 6               
+00021Ar 6                   dispatch_nmi:
+00021Ar 6                       jmp (nmi_vector)       ; Forward to configured NMI handler
+00021Ar 6               
+00021Ar 6                   dispatch_irq:
+00021Ar 6                       jmp (irq_vector)       ; Forward to configured IRQ handler
+00021Ar 6               
+00021Ar 6                   default_nmi:
+00021Ar 6                       rti
+00021Ar 6               
+00021Ar 6                   default_irq:
+00021Ar 6                       rti
+00021Ar 6               
+00021Ar 6               .segment "VECTORS"
+00021Ar 6               
+00021Ar 6                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+00021Ar 6                   .word boot                 ; Reset vector
+00021Ar 6                   .word dispatch_irq         ; IRQ vector
+00021Ar 6               
+00021Ar 6               .endscope
+00021Ar 6               
+00021Ar 6               ; Prevent build warnings when a segment is not used in a project.
+00021Ar 6               .segment "STACK"
+00021Ar 6               .segment "RAM"
+00021Ar 6               .segment "WOZMON"
+00021Ar 6               
+00021Ar 6               ; Make sure that code without segment after including this uses CODE.
+00021Ar 6               .segment "CODE"
+00021Ar 6               
+00021Ar 6               .endif
+00021Ar 6               
+00021Ar 5               
+00021Ar 5               .segment "BIOS"
+00021Ar 5               
+00021Ar 5               ; Registers
+00021Ar 5               DATA_REGISTER   = __UART_START__ + $0
+00021Ar 5               STATUS_REGISTER = __UART_START__ + $1
+00021Ar 5               CMD_REGISTER    = __UART_START__ + $2
+00021Ar 5               CTRL_REGISTER   = __UART_START__ + $3
+00021Ar 5               
+00021Ar 5               ; STATUS register
+00021Ar 5               IRQ        = %10000000       ; Bit is 1 when interrupt has occurred
+00021Ar 5               DSR        = %01000000       ; Bit is 0 when Data Set is Ready
+00021Ar 5               DCD        = %00100000       ; Bit is 0 when Data Carrier is Detected
+00021Ar 5               TXEMPTY    = %00010000       ; Bit is 1 when Transmitter Data Register is Empty
+00021Ar 5               RXFULL     = %00001000       ; Bit is 1 when Receiver Data Register is Full
+00021Ar 5               OVERRUN    = %00000100       ; Bit is 1 when Overrun has occurred
+00021Ar 5               FRAMINGERR = %00000010       ; Bit is 1 when Framing Error was detected
+00021Ar 5               PARITYERR  = %00000001       ; Bit is 1 when Parity Error was detected
+00021Ar 5               
+00021Ar 5               ; CMD register
+00021Ar 5               
+00021Ar 5               ; Parity check controls
+00021Ar 5               PAROFF     = %00000000       ; Parity disabled
+00021Ar 5               PARODD     = %00100000       ; Odd parity receiver and transmitter
+00021Ar 5               PAREVEN    = %01000000       ; Even parity receiver and transmitter
+00021Ar 5               PARMARK    = %10100000       ; Mark parity bit transmitted, parity check disabled
+00021Ar 5               PARSPACE   = %11100000       ; Space parity bit transmitted, parity check disabled
+00021Ar 5               
+00021Ar 5               ; Receiver echo
+00021Ar 5               ECHOOFF    = %00000000       ; Echo disabled
+00021Ar 5               ECHOON     = %00010000       ; Echo enabled (use with TIC0)
+00021Ar 5               
+00021Ar 5               ; Transmitter controls
+00021Ar 5               TIC0       = %00000000       ; Transmit interrupt = off, RTS = high, transmitter = off
+00021Ar 5               TIC1       = %00000100       ; Transmit interrupt = on,  RTS = low,  transmitter = on
+00021Ar 5               TIC2       = %00001000       ; Transmit interrupt = off, RTS = low,  transmitter = on
+00021Ar 5               TIC3       = %00001100       ; Transmit interrupt = off, RTS = Low,  transmitter = transmit BRK
+00021Ar 5               
+00021Ar 5               ; Receiver interrupt control
+00021Ar 5               IRQON      = %00000000       ; IRQB enabled (from bit 3 of status register) TODO read how this works
+00021Ar 5               IRQOFF     = %00000010       ; IRQB disabled
+00021Ar 5               
+00021Ar 5               ; Data terminal ready control
+00021Ar 5               DTROFF     = %00000000       ; Receiver = off, interrupts = off, DTRB = high
+00021Ar 5               DTRON      = %00000001       ; Receiver = on, interrupts = on, DTRB = low
+00021Ar 5               
+00021Ar 5               ; CTRL register
+00021Ar 5               
+00021Ar 5               ; Stop Bit Number (SBN)
+00021Ar 5               STOP1      = %00000000       ; 1 stop bit
+00021Ar 5               STOP2      = %10000000       ; 2 stop bits, 1.5 for WL5 - parity, 1 for WL8 + parity
+00021Ar 5               
+00021Ar 5               ; Word Length (WL)
+00021Ar 5               LEN8       = %00000000       ; 8 bits per word
+00021Ar 5               LEN7       = %00100000       ; 7 bits per word
+00021Ar 5               LEN6       = %01000000       ; 6 bits per word
+00021Ar 5               LEN5       = %01100000       ; 5 bits per word
+00021Ar 5               
+00021Ar 5               ; Receiver Clock Source (RCS)
+00021Ar 5               RCSEXT     = %00000000       ; Use external clock (on RxC, providing a 16x clock input)
+00021Ar 5               RCSGEN     = %00010000       ; Use baud rate generator (using 1.8432 MHz crystal on XTAL1/XTAL2)
+00021Ar 5               
+00021Ar 5               ; Selected Baud Rate (SBR)
+00021Ar 5               BNONE      = %00000000       ; 16x external clock
+00021Ar 5               B50        = %00000001       ; Baud rate 50
+00021Ar 5               B75        = %00000010       ; Baud rate 75
+00021Ar 5               B109       = %00000011       ; Baud rate 109.92
+00021Ar 5               B134       = %00000100       ; Baud rate 134.58
+00021Ar 5               B150       = %00000101       ; Baud rate 150
+00021Ar 5               B300       = %00000110       ; Baud rate 300
+00021Ar 5               B600       = %00000111       ; Baud rate 600
+00021Ar 5               B1200      = %00001000       ; Baud rate 1200
+00021Ar 5               B2400      = %00001010       ; Baud rate 2400
+00021Ar 5               B3600      = %00001011       ; Baud rate 3600
+00021Ar 5               B4800      = %00001100       ; Baud rate 4800
+00021Ar 5               B7200      = %00001101       ; Baud rate 7200
+00021Ar 5               B9600      = %00001110       ; Baud rate 9600
+00021Ar 5               B19200     = %00001111       ; Baud rate 19200
+00021Ar 5               
+00021Ar 5               .endif
+00021Ar 5               
+00021Ar 5               
+00021Ar 4               
+00021Ar 4                   ; The ZP byte is declared in the HAL (uart.s).
+00021Ar 4                   byte = UART::byte
+00021Ar 4               
+00021Ar 4                   .proc init
+00021Ar 4  48                   pha
+00021Br 4  8A                   txa
+00021Cr 4  48                   pha
+00021Dr 4  98                   tya
+00021Er 4  48                   pha
+00021Fr 4               
+00021Fr 4  20 rr rr             jsr soft_reset
+000222r 4               
+000222r 4                       ; Configure:
+000222r 4                       ; - data = 8 bits, 1 stopbit
+000222r 4                       ; - transmitter baud rate = 19200
+000222r 4                       ; - receiver baud rate = using transmitter baud rate generator
+000222r 4  A9 1F 8D rr          set_byte CTRL_REGISTER, #(LEN8 | STOP1 | B19200 | RCSGEN)
+000226r 4  rr           
+000227r 4               
+000227r 4                       ; Configure:
+000227r 4                       ; - parity = none
+000227r 4                       ; - echo = off
+000227r 4                       ; - transmitter = on
+000227r 4                       ; - receiver = on
+000227r 4                       ; - interrupts = none
+000227r 4  A9 0B 8D rr          set_byte CMD_REGISTER, #(PAROFF | ECHOOFF | TIC2 | DTRON | IRQOFF)
+00022Br 4  rr           
+00022Cr 4               
+00022Cr 4  68                   pla
+00022Dr 4  A8                   tay
+00022Er 4  68                   pla
+00022Fr 4  AA                   tax
+000230r 4  68                   pla
+000231r 4  60                   rts
+000232r 4                   .endproc
+000232r 4               
+000232r 4                   .proc soft_reset
+000232r 4  48                   pha
+000233r 4  8A                   txa
+000234r 4  48                   pha
+000235r 4  98                   tya
+000236r 4  48                   pha
+000237r 4               
+000237r 4                       ; Soft reset by writing to the status register.
+000237r 4  A9 00 8D rr          clr_byte STATUS_REGISTER
+00023Br 4  rr           
+00023Cr 4               
+00023Cr 4                       ; Wait for soft reset to complete. The UART needs time to finish its
+00023Cr 4                       ; internal reset before CTRL and CMD writes will take effect.
+00023Cr 4                       ; This is a crude delay loop, but it works. Before using this, an
+00023Cr 4                       ; attempt was done to base readiness on the TXEMPTY status bit, but
+00023Cr 4                       ; that did not work.
+00023Cr 4  A2 FF                ldx #$ff
+00023Er 4  A0 FF                ldy #$ff
+000240r 4                   @wait:
+000240r 4  88                   dey
+000241r 4  D0 FD                bne @wait
+000243r 4  CA                   dex
+000244r 4  D0 FA                bne @wait
+000246r 4               
+000246r 4  68                   pla
+000247r 4  A8                   tay
+000248r 4  68                   pla
+000249r 4  AA                   tax
+00024Ar 4  68                   pla
+00024Br 4  60                   rts
+00024Cr 4                   .endproc
+00024Cr 4               
+00024Cr 4                   .proc load_status
+00024Cr 4  48                   pha
+00024Dr 4  AD rr rr             lda STATUS_REGISTER
+000250r 4  8D rr rr             sta byte
+000253r 4  68                   pla
+000254r 4  60                   rts
+000255r 4                   .endproc
+000255r 4               
+000255r 4                   .proc check_rx
+000255r 4  48                   pha
+000256r 4  AD rr rr             lda STATUS_REGISTER
+000259r 4  29 08                and #RXFULL
+00025Br 4  8D rr rr             sta byte
+00025Er 4  68                   pla
+00025Fr 4  60                   rts
+000260r 4                   .endproc
+000260r 4               
+000260r 4                   .proc check_tx
+000260r 4  48                   pha
+000261r 4  AD rr rr             lda STATUS_REGISTER
+000264r 4  29 10                and #TXEMPTY
+000266r 4  8D rr rr             sta byte
+000269r 4  68                   pla
+00026Ar 4  60                   rts
+00026Br 4                   .endproc
+00026Br 4               
+00026Br 4                   .proc read
+00026Br 4  48                   pha
+00026Cr 4  AD rr rr             lda DATA_REGISTER
+00026Fr 4  8D rr rr             sta byte
+000272r 4  68                   pla
+000273r 4  60                   rts
+000274r 4                   .endproc
+000274r 4               
+000274r 4                   .proc write
+000274r 4  48                   pha
+000275r 4  AD rr rr             lda byte
+000278r 4  8D rr rr             sta DATA_REGISTER
+00027Br 4  68                   pla
+00027Cr 4  60                   rts
+00027Dr 4                   .endproc
+00027Dr 4               
+00027Dr 4               .endscope
+00027Dr 4               
+00027Dr 4               .endif
+00027Dr 4               
+00027Dr 4               
+00027Dr 3               
+00027Dr 3                   ; Zero page parameter interface.
+00027Dr 3                   .segment "ZEROPAGE"
+000004r 3               
+000004r 3  xx               byte: .res 1               ; Input/output byte for read/write
+000005r 3               
+000005r 3                   .segment "BIOS"
+00027Dr 3               
+00027Dr 3                   ; -------------------------------------------------------------
+00027Dr 3                   ; Access to the low level driver API
+00027Dr 3                   ; -------------------------------------------------------------
+00027Dr 3               
+00027Dr 3                   init = DRIVER::init
+00027Dr 3                       ; Initialize the serial interface: N-8-1, 19200 baud.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   soft_reset = DRIVER::soft_reset
+00027Dr 3                       ; Perform a soft reset of the UART.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   check_rx = DRIVER::check_rx
+00027Dr 3                       ; Check if there is a byte in the receiver buffer.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   UART::byte = non-zero if data available, zero if not
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   read = DRIVER::read
+00027Dr 3                       ; Read a byte from the receiver.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   UART::byte = received byte
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   check_tx = DRIVER::check_tx
+00027Dr 3                       ; Check if a byte can be sent to the transmitter.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   UART::byte = non-zero if ready, zero if busy
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   write = DRIVER::write
+00027Dr 3                       ; Write a byte to the transmitter.
+00027Dr 3                       ;
+00027Dr 3                       ; In (zero page):
+00027Dr 3                       ;   UART::byte = byte to write
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   load_status = DRIVER::load_status
+00027Dr 3                       ; Load the status register.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   UART::byte = status bits (IRQ DSR DCD TXE RXF OVR FRM PAR)
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3                   ; -------------------------------------------------------------
+00027Dr 3                   ; High level convenience wrappers.
+00027Dr 3                   ; -------------------------------------------------------------
+00027Dr 3               
+00027Dr 3                   .proc read_when_ready
+00027Dr 3                       ; Wait for a byte in the receiver buffer, then read it.
+00027Dr 3                       ;
+00027Dr 3                       ; Out:
+00027Dr 3                       ;   UART::byte = received byte
+00027Dr 3                       ;   A, X, Y preserved
+00027Dr 3               
+00027Dr 3  48                   pha
+00027Er 3                   @wait_for_rx:
+00027Er 3  20 rr rr             jsr check_rx
+000281r 3  A5 rr                lda byte
+000283r 3  F0 F9                beq @wait_for_rx
+000285r 3  20 rr rr             jsr read
+000288r 3  68                   pla
+000289r 3  60                   rts
+00028Ar 3                   .endproc
+00028Ar 3               
+00028Ar 3                   .proc write_when_ready
+00028Ar 3                       ; Wait for transmitter to be ready, then write a byte.
+00028Ar 3                       ;
+00028Ar 3                       ; In (zero page):
+00028Ar 3                       ;   UART::byte = byte to write
+00028Ar 3                       ; Out:
+00028Ar 3                       ;   A, X, Y preserved
+00028Ar 3               
+00028Ar 3  48                   pha
+00028Br 3  A5 rr                lda byte               ; Save the data byte
+00028Dr 3  48                   pha
+00028Er 3                   @wait_for_tx:
+00028Er 3  20 rr rr             jsr check_tx
+000291r 3  A5 rr                lda byte
+000293r 3  F0 F9                beq @wait_for_tx
+000295r 3  68                   pla                    ; Restore the data byte
+000296r 3  85 rr                sta byte
+000298r 3  20 rr rr             jsr write
+00029Br 3  68                   pla
+00029Cr 3  60                   rts
+00029Dr 3                   .endproc
+00029Dr 3               
+00029Dr 3                   .proc write_crnl_when_ready
+00029Dr 3                       ; Wait for transmitter to be ready, and write CRNL (\r\n).
+00029Dr 3                       ;
+00029Dr 3                       ; Out:
+00029Dr 3                       ;   A, X, Y preserved
+00029Dr 3               
+00029Dr 3  48                   pha
+00029Er 3  A9 0D                lda #$0d
+0002A0r 3  85 rr                sta byte
+0002A2r 3  20 rr rr             jsr write_when_ready
+0002A5r 3  A9 0A                lda #$0a
+0002A7r 3  85 rr                sta byte
+0002A9r 3  20 rr rr             jsr write_when_ready
+0002ACr 3  68                   pla
+0002ADr 3  60                   rts
+0002AEr 3                   .endproc
+0002AEr 3               
+0002AEr 3               .endscope
+0002AEr 3               
+0002AEr 3               .endif
+0002AEr 3               
+0002AEr 2               
+0002AEr 2               ; WozMon.
+0002AEr 2               .ifdef INCLUDE_WOZMON
+0002AEr 2                   .include "bios/wozmon.s"
+0002AEr 3               ; -----------------------------------------------------------------
+0002AEr 3               ; WozMon, modified for the breadboard computer BIOS
+0002AEr 3               ;
+0002AEr 3               ; Differences with the original:
+0002AEr 3               ; - No hard-coded memory addresses, but using the linker for these.
+0002AEr 3               ; - Serial console output is used.
+0002AEr 3               ; - To make <ENTER> work on serial, "\r\n" is send instead of "\n".
+0002AEr 3               ; - The Apple was upper case only I think, resulting in having to
+0002AEr 3               ;   always input upper case addresses/values. The code was updated
+0002AEr 3               ;   to be case-insensitive.
+0002AEr 3               ;
+0002AEr 3               ; 2000: A9 00 AA 20 EF FF E8 8A 4C 02 20
+0002AEr 3               ;
+0002AEr 3               ;
+0002AEr 3               ; 2000: A9 00     LDA #$00         ; A = 0
+0002AEr 3               ; 2002: AA        TAX              ; X = A (counter)
+0002AEr 3               ; 2003: 20 EF FF  JSR $FFEF        ; Call routine at $FFEF
+0002AEr 3               ; 2006: E8        INX              ; X++
+0002AEr 3               ; 2007: 8A        TXA              ; A = X
+0002AEr 3               ; 2008: 4C 02 20  JMP $2002        ; Loop forever
+0002AEr 3               ;
+0002AEr 3               ; -----------------------------------------------------------------
+0002AEr 3               
+0002AEr 3               .ifndef BIOS_WOZMON_S
+0002AEr 3               BIOS_WOZMON_S = 1
+0002AEr 3               
+0002AEr 3               .include "bios/bios.s"
+0002AEr 4               ; -----------------------------------------------------------------
+0002AEr 4               ; BIOS for my Ben Eater-style breadboard computer
+0002AEr 4               ; -----------------------------------------------------------------
+0002AEr 4               
+0002AEr 4               .ifndef BIOS_S
+0002AEr 4               BIOS_S = 1
+0002AEr 4               
+0002AEr 4               ; I use a W65C02, but let's keep the code compatible for 6502. This
+0002AEr 4               ; is good for compatibility, but also for forced-upon compatibility
+0002AEr 4               ; in cases where a vendor ship an NMOS 6502 CPU, stamped as a W65C02.
+0002AEr 4               ; (debugging BRA being skipped instead of actually branching on an
+0002AEr 4               ; NMOS 6502 was not that much fun).
+0002AEr 4               .setcpu "6502"
+0002AEr 4               
+0002AEr 4               .segment "BIOS"
+0002AEr 4               
+0002AEr 4               ; Include general purpose macros, that make it easier to write some
+0002AEr 4               ; often used code fragments.
+0002AEr 4               .include "macros/macros.s"
+0002AEr 4               
+0002AEr 4               ; Include global constants and the configuration file.
+0002AEr 4               .include "bios/constants.s"
+0002AEr 4               .include "config.s"
+0002AEr 4               
+0002AEr 4               ; Include the Hardware Abstraction Layer (HAL) and hardware drivers.
+0002AEr 4               .include "bios/io/w65c22.s"
+0002AEr 4               .include "bios/gpio.s"
+0002AEr 4               .include "bios/lcd.s"
+0002AEr 4               .include "bios/uart.s"
+0002AEr 4               
+0002AEr 4               ; WozMon.
+0002AEr 4               .ifdef INCLUDE_WOZMON
+0002AEr 4                   .include "bios/wozmon.s"
+0002AEr 4                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+0002AEr 4               .endif
+0002AEr 4               
+0002AEr 4               .scope BIOS
+0002AEr 4               
+0002AEr 4                   boot:
+0002AEr 4                       ldx #$ff  ; Initialize stack pointer
+0002AEr 4                       txs
+0002AEr 4               
+0002AEr 4                       jsr init_interrupts
+0002AEr 4                       jsr LCD::init
+0002AEr 4                       jsr UART::init
+0002AEr 4               
+0002AEr 4                       jmp main  ; Note: `main` must be implemented by application
+0002AEr 4               
+0002AEr 4                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+0002AEr 4                   halt:
+0002AEr 4                       jmp halt
+0002AEr 4               
+0002AEr 4               .segment "ZEROPAGE"
+0002AEr 4               
+0002AEr 4                   ; Address vectors, that can be modified in order to point
+0002AEr 4                   ; to a custom interrupt handler.
+0002AEr 4                   nmi_vector: .res 2
+0002AEr 4                   irq_vector: .res 2
+0002AEr 4               
+0002AEr 4               .segment "BIOS"
+0002AEr 4               
+0002AEr 4                   .proc init_interrupts
+0002AEr 4                       ; Setup the default interrupt handling:
+0002AEr 4                       ;
+0002AEr 4                       ; - Interrupts disabled
+0002AEr 4                       ; - A null NMI handler
+0002AEr 4                       ; - A null IRQ handler
+0002AEr 4                       ;
+0002AEr 4                       ; Out:
+0002AEr 4                       ;   A = clobbered
+0002AEr 4               
+0002AEr 4                       ; Disable interrupts. If code that uses this BIOS requires
+0002AEr 4                       ; interrupt handling, these must be enabled using `cli`.
+0002AEr 4                       sei
+0002AEr 4               
+0002AEr 4                       cp_address nmi_vector, default_nmi
+0002AEr 4                       cp_address irq_vector, default_irq
+0002AEr 4               
+0002AEr 4                       rts
+0002AEr 4                   .endproc
+0002AEr 4               
+0002AEr 4                   dispatch_nmi:
+0002AEr 4                       jmp (nmi_vector)       ; Forward to configured NMI handler
+0002AEr 4               
+0002AEr 4                   dispatch_irq:
+0002AEr 4                       jmp (irq_vector)       ; Forward to configured IRQ handler
+0002AEr 4               
+0002AEr 4                   default_nmi:
+0002AEr 4                       rti
+0002AEr 4               
+0002AEr 4                   default_irq:
+0002AEr 4                       rti
+0002AEr 4               
+0002AEr 4               .segment "VECTORS"
+0002AEr 4               
+0002AEr 4                   .word dispatch_nmi         ; Non-Maskable Interrupt vector
+0002AEr 4                   .word boot                 ; Reset vector
+0002AEr 4                   .word dispatch_irq         ; IRQ vector
+0002AEr 4               
+0002AEr 4               .endscope
+0002AEr 4               
+0002AEr 4               ; Prevent build warnings when a segment is not used in a project.
+0002AEr 4               .segment "STACK"
+0002AEr 4               .segment "RAM"
+0002AEr 4               .segment "WOZMON"
+0002AEr 4               
+0002AEr 4               ; Make sure that code without segment after including this uses CODE.
+0002AEr 4               .segment "CODE"
+0002AEr 4               
+0002AEr 4               .endif
+0002AEr 4               
+0002AEr 3               
+0002AEr 3               .scope WOZMON
+0002AEr 3               
+0002AEr 3                   .segment "ZEROPAGE"
+000005r 3               
+000005r 3  xx               XAML: .res 1                           ; Last "opened" location Low
+000006r 3  xx               XAMH: .res 1                           ; Last "opened" location High
+000007r 3  xx               STL:  .res 1                           ; Store address Low
+000008r 3  xx               STH:  .res 1                           ; Store address High
+000009r 3  xx               L:    .res 1                           ; Hex value parsing Low
+00000Ar 3  xx               H:    .res 1                           ; Hex value parsing High
+00000Br 3  xx               YSAV: .res 1                           ; Used to see if hex value is given
+00000Cr 3  xx               MODE: .res 1                           ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
+00000Dr 3               
+00000Dr 3                   .segment "RAM"
+000000r 3               
+000000r 3  xx xx xx xx      IN: .res $FF                           ; Input buffer
+000004r 3  xx xx xx xx  
+000008r 3  xx xx xx xx  
+0000FFr 3               
+0000FFr 3                   .segment "WOZMON"
+000000r 3               
+000000r 3                   RESET:
+000000r 3                                   ; No hardware initialization required like the original, since
+000000r 3                                   ; the BIOS initialization already setup the hardware for us.
+000000r 3               
+000000r 3  A9 1B                            LDA     #$1B           ; Begin with escape.
+000002r 3               
+000002r 3                   NOTCR:
+000002r 3  C9 08                            CMP     #$08           ; Backspace key?
+000004r 3  F0 11                            BEQ     BACKSPACE      ; Yes.
+000006r 3  C9 1B                            CMP     #$1B           ; ESC?
+000008r 3  F0 03                            BEQ     ESCAPE         ; Yes.
+00000Ar 3  C8                               INY                    ; Advance text index.
+00000Br 3  10 0D                            BPL     NEXTCHAR       ; Auto ESC if line longer than 127.
+00000Dr 3               
+00000Dr 3                   ESCAPE:
+00000Dr 3  A9 5C                            LDA     #$5C           ; "\".
+00000Fr 3  20 rr rr                         JSR     ECHO           ; Output it.
+000012r 3               
+000012r 3                   GETLINE:
+000012r 3  20 rr rr                         JSR     UART::write_crnl_when_ready
+000015r 3               
+000015r 3  A0 01                            LDY     #$01           ; Initialize text index.
+000017r 3  88               BACKSPACE:      DEY                    ; Back up text index.
+000018r 3  30 F8                            BMI     GETLINE        ; Beyond start of line, reinitialize.
+00001Ar 3               
+00001Ar 3                   NEXTCHAR:
+00001Ar 3  20 rr rr                         JSR     UART::read_when_ready ; Load character. B7 will be '0'.
+00001Dr 3  A5 rr                            LDA     UART::byte     ; Get received byte.
+00001Fr 3  C9 61                            CMP     #$61           ; Lowercase letter?
+000021r 3  90 02                            BCC     @upper
+000023r 3  E9 20                            SBC     #$20           ; Yes, convert to uppercase (carry set from CMP).
+000025r 3                   @upper:
+000025r 3  99 rr rr                         STA     IN,Y           ; Add to text buffer.
+000028r 3  20 rr rr                         JSR     ECHO           ; Display character.
+00002Br 3  C9 0D                            CMP     #$0D           ; CR?
+00002Dr 3  D0 D3                            BNE     NOTCR          ; No.
+00002Fr 3               
+00002Fr 3  A0 FF                            LDY     #$FF           ; Reset text index.
+000031r 3  A9 00                            LDA     #$00           ; For XAM mode.
+000033r 3  AA                               TAX                    ; X=0.
+000034r 3                   SETBLOCK:
+000034r 3  0A                               ASL
+000035r 3                   SETSTOR:
+000035r 3  0A                               ASL                    ; Leaves $7B if setting STOR mode.
+000036r 3  85 rr                            STA     MODE           ; $00 = XAM, $74 = STOR, $B8 = BLOK XAM.
+000038r 3                   BLSKIP:
+000038r 3  C8                               INY                    ; Advance text index.
+000039r 3                   NEXTITEM:
+000039r 3  B9 rr rr                         LDA     IN,Y           ; Get character.
+00003Cr 3  C9 0D                            CMP     #$0D           ; CR?
+00003Er 3  F0 D2                            BEQ     GETLINE        ; Yes, done this line.
+000040r 3  C9 2E                            CMP     #$2E           ; "."?
+000042r 3  90 F4                            BCC     BLSKIP         ; Skip delimiter.
+000044r 3  F0 EE                            BEQ     SETBLOCK       ; Set BLOCK XAM mode.
+000046r 3  C9 3A                            CMP     #$3A           ; ":"?
+000048r 3  F0 EB                            BEQ     SETSTOR        ; Yes, set STOR mode.
+00004Ar 3  C9 52                            CMP     #$52           ; "R"?
+00004Cr 3  F0 3B                            BEQ     RUN            ; Yes, run user program.
+00004Er 3  86 rr                            STX     L              ; $00 -> L.
+000050r 3  86 rr                            STX     H              ;    and H.
+000052r 3  84 rr                            STY     YSAV           ; Save Y for comparison
+000054r 3               
+000054r 3                   NEXTHEX:
+000054r 3  B9 rr rr                         LDA     IN,Y           ; Get character for hex test.
+000057r 3  49 30                            EOR     #$30           ; Map digits to $0-9.
+000059r 3  C9 0A                            CMP     #$0A           ; Digit?
+00005Br 3  90 06                            BCC     DIG            ; Yes.
+00005Dr 3  69 88                            ADC     #$88           ; Map letter "A"-"F" to $FA-FF.
+00005Fr 3  C9 FA                            CMP     #$FA           ; Hex letter?
+000061r 3  90 11                            BCC     NOTHEX         ; No, character not hex.
+000063r 3                   DIG:
+000063r 3  0A                               ASL
+000064r 3  0A                               ASL                    ; Hex digit to MSD of A.
+000065r 3  0A                               ASL
+000066r 3  0A                               ASL
+000067r 3               
+000067r 3  A2 04                            LDX     #$04           ; Shift count.
+000069r 3                   HEXSHIFT:
+000069r 3  0A                               ASL                    ; Hex digit left, MSB to carry.
+00006Ar 3  26 rr                            ROL     L              ; Rotate into LSD.
+00006Cr 3  26 rr                            ROL     H              ; Rotate into MSD's.
+00006Er 3  CA                               DEX                    ; Done 4 shifts?
+00006Fr 3  D0 F8                            BNE     HEXSHIFT       ; No, loop.
+000071r 3  C8                               INY                    ; Advance text index.
+000072r 3  D0 E0                            BNE     NEXTHEX        ; Always taken. Check next character for hex.
+000074r 3               
+000074r 3                   NOTHEX:
+000074r 3  C4 rr                            CPY     YSAV           ; Check if L, H empty (no hex digits).
+000076r 3  F0 95                            BEQ     ESCAPE         ; Yes, generate ESC sequence.
+000078r 3               
+000078r 3  24 rr                            BIT     MODE           ; Test MODE byte.
+00007Ar 3  50 10                            BVC     NOTSTOR        ; B6=0 is STOR, 1 is XAM and BLOCK XAM.
+00007Cr 3               
+00007Cr 3  A5 rr                            LDA     L              ; LSD's of hex data.
+00007Er 3  81 rr                            STA     (STL,X)        ; Store current 'store index'.
+000080r 3  E6 rr                            INC     STL            ; Increment store index.
+000082r 3  D0 B5                            BNE     NEXTITEM       ; Get next item (no carry).
+000084r 3  E6 rr                            INC     STH            ; Add carry to 'store index' high order.
+000086r 3  4C rr rr         TONEXTITEM:     JMP     NEXTITEM       ; Get next command item.
+000089r 3               
+000089r 3                   RUN:
+000089r 3  6C rr rr                         JMP     (XAML)         ; Run at current XAM index.
+00008Cr 3               
+00008Cr 3                   NOTSTOR:
+00008Cr 3  30 29                            BMI     XAMNEXT        ; B7 = 0 for XAM, 1 for BLOCK XAM.
+00008Er 3               
+00008Er 3  A2 02                            LDX     #$02           ; Byte count.
+000090r 3  B5 rr            SETADR:         LDA     L-1,X          ; Copy hex data to
+000092r 3  95 rr                            STA     STL-1,X        ;  'store index'.
+000094r 3  95 rr                            STA     XAML-1,X       ; And to 'XAM index'.
+000096r 3  CA                               DEX                    ; Next of 2 bytes.
+000097r 3  D0 F7                            BNE     SETADR         ; Loop unless X = 0.
+000099r 3               
+000099r 3                   NXTPRNT:
+000099r 3  D0 12                            BNE     PRDATA         ; NE means no address to print.
+00009Br 3  20 rr rr                         JSR     UART::write_crnl_when_ready
+00009Er 3  A5 rr                            LDA     XAMH           ; 'Examine index' high-order byte.
+0000A0r 3  20 rr rr                         JSR     PRBYTE         ; Output it in hex format.
+0000A3r 3  A5 rr                            LDA     XAML           ; Low-order 'examine index' byte.
+0000A5r 3  20 rr rr                         JSR     PRBYTE         ; Output it in hex format.
+0000A8r 3  A9 3A                            LDA     #$3A           ; ":".
+0000AAr 3  20 rr rr                         JSR     ECHO           ; Output it.
+0000ADr 3               
+0000ADr 3                   PRDATA:
+0000ADr 3  A9 20                            LDA     #$20           ; Blank.
+0000AFr 3  20 rr rr                         JSR     ECHO           ; Output it.
+0000B2r 3  A1 rr                            LDA     (XAML,X)       ; Get data byte at 'examine index'.
+0000B4r 3  20 rr rr                         JSR     PRBYTE         ; Output it in hex format.
+0000B7r 3  86 rr            XAMNEXT:        STX     MODE           ; 0 -> MODE (XAM mode).
+0000B9r 3  A5 rr                            LDA     XAML
+0000BBr 3  C5 rr                            CMP     L              ; Compare 'examine index' to hex data.
+0000BDr 3  A5 rr                            LDA     XAMH
+0000BFr 3  E5 rr                            SBC     H
+0000C1r 3  B0 C3                            BCS     TONEXTITEM     ; Not less, so no more data to output.
+0000C3r 3               
+0000C3r 3  E6 rr                            INC     XAML
+0000C5r 3  D0 02                            BNE     MOD8CHK        ; Increment 'examine index'.
+0000C7r 3  E6 rr                            INC     XAMH
+0000C9r 3               
+0000C9r 3                   MOD8CHK:
+0000C9r 3  A5 rr                            LDA     XAML           ; Check low-order 'examine index' byte
+0000CBr 3  29 07                            AND     #$07           ; For MOD 8 = 0
+0000CDr 3  10 CA                            BPL     NXTPRNT        ; Always taken.
+0000CFr 3               
+0000CFr 3                   PRBYTE:
+0000CFr 3  48                               PHA                    ; Save A for LSD.
+0000D0r 3  4A                               LSR
+0000D1r 3  4A                               LSR
+0000D2r 3  4A                               LSR                    ; MSD to LSD position.
+0000D3r 3  4A                               LSR
+0000D4r 3  20 rr rr                         JSR     PRHEX          ; Output hex digit.
+0000D7r 3  68                               PLA                    ; Restore A.
+0000D8r 3               
+0000D8r 3                   PRHEX:
+0000D8r 3  29 0F                            AND     #$0F           ; Mask LSD for hex print.
+0000DAr 3  09 30                            ORA     #$30           ; Add "0".
+0000DCr 3  C9 3A                            CMP     #$3A           ; Digit?
+0000DEr 3  90 0F                            BCC     ECHO           ; Yes, output it.
+0000E0r 3  69 06                            ADC     #$06           ; Add offset for letter.
+0000E2r 3               
+0000E2r 3  EA                               NOP
+0000E3r 3  EA                               NOP
+0000E4r 3  EA                               NOP
+0000E5r 3  EA                               NOP
+0000E6r 3  EA                               NOP
+0000E7r 3  EA                               NOP
+0000E8r 3  EA                               NOP
+0000E9r 3  EA                               NOP
+0000EAr 3  EA                               NOP
+0000EBr 3  EA                               NOP
+0000ECr 3  EA                               NOP
+0000EDr 3  EA                               NOP
+0000EEr 3  EA                               NOP
+0000EFr 3               
+0000EFr 3                   ECHO:
+0000EFr 3  85 rr                            STA     UART::byte
+0000F1r 3  20 rr rr                         JSR     UART::write_when_ready
+0000F4r 3  60                               RTS
+0000F5r 3               
+0000F5r 3               .endscope
+0000F5r 3               
+0000F5r 3               .endif
+0000F5r 3               
+0000F5r 2                   .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+0002AEr 2               .endif
+0002AEr 2               
+0002AEr 2               .scope BIOS
+0002AEr 2               
+0002AEr 2                   boot:
+0002AEr 2  A2 FF                ldx #$ff  ; Initialize stack pointer
+0002B0r 2  9A                   txs
+0002B1r 2               
+0002B1r 2  20 rr rr             jsr init_interrupts
+0002B4r 2  20 rr rr             jsr LCD::init
+0002B7r 2  20 rr rr             jsr UART::init
+0002BAr 2               
+0002BAr 2  4C rr rr             jmp main  ; Note: `main` must be implemented by application
+0002BDr 2               
+0002BDr 2                   ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+0002BDr 2                   halt:
+0002BDr 2  4C rr rr             jmp halt
+0002C0r 2               
+0002C0r 2               .segment "ZEROPAGE"
+00000Dr 2               
+00000Dr 2                   ; Address vectors, that can be modified in order to point
+00000Dr 2                   ; to a custom interrupt handler.
+00000Dr 2  xx xx            nmi_vector: .res 2
+00000Fr 2  xx xx            irq_vector: .res 2
+000011r 2               
+000011r 2               .segment "BIOS"
+0002C0r 2               
+0002C0r 2                   .proc init_interrupts
+0002C0r 2                       ; Setup the default interrupt handling:
+0002C0r 2                       ;
+0002C0r 2                       ; - Interrupts disabled
+0002C0r 2                       ; - A null NMI handler
+0002C0r 2                       ; - A null IRQ handler
+0002C0r 2                       ;
+0002C0r 2                       ; Out:
+0002C0r 2                       ;   A = clobbered
+0002C0r 2               
+0002C0r 2                       ; Disable interrupts. If code that uses this BIOS requires
+0002C0r 2                       ; interrupt handling, these must be enabled using `cli`.
+0002C0r 2  78                   sei
+0002C1r 2               
+0002C1r 2  A9 rr 85 rr          cp_address nmi_vector, default_nmi
+0002C5r 2  A9 rr 85 rr  
+0002C9r 2  A9 rr 85 rr          cp_address irq_vector, default_irq
+0002CDr 2  A9 rr 85 rr  
+0002D1r 2               
+0002D1r 2  60                   rts
+0002D2r 2                   .endproc
+0002D2r 2               
+0002D2r 2                   dispatch_nmi:
+0002D2r 2  6C rr rr             jmp (nmi_vector)       ; Forward to configured NMI handler
+0002D5r 2               
+0002D5r 2                   dispatch_irq:
+0002D5r 2  6C rr rr             jmp (irq_vector)       ; Forward to configured IRQ handler
+0002D8r 2               
+0002D8r 2                   default_nmi:
+0002D8r 2  40                   rti
+0002D9r 2               
+0002D9r 2                   default_irq:
+0002D9r 2  40                   rti
+0002DAr 2               
+0002DAr 2               .segment "VECTORS"
+000000r 2               
+000000r 2  rr rr            .word dispatch_nmi         ; Non-Maskable Interrupt vector
+000002r 2  rr rr            .word boot                 ; Reset vector
+000004r 2  rr rr            .word dispatch_irq         ; IRQ vector
+000006r 2               
+000006r 2               .endscope
+000006r 2               
+000006r 2               ; Prevent build warnings when a segment is not used in a project.
+000006r 2               .segment "STACK"
+000000r 2               .segment "RAM"
+0000FFr 2               .segment "WOZMON"
+0000F5r 2               
+0000F5r 2               ; Make sure that code without segment after including this uses CODE.
+0000F5r 2               .segment "CODE"
+000000r 2               
+000000r 2               .endif
+000000r 2               
+000000r 1               
+000000r 1               .import __WOZMON_START__
+000000r 1               
+000000r 1  52 75 6E 6E  lcd_text:     .asciiz "Running WozMon"
+000004r 1  69 6E 67 20  
+000008r 1  57 6F 7A 4D  
+00000Fr 1  57 65 6C 63  console_text: .asciiz "Welcome to WozMon"
+000013r 1  6F 6D 65 20  
+000017r 1  74 6F 20 57  
+000021r 1               
+000021r 1               main:
+000021r 1  A2 00            ldx #0
+000023r 1               @send_lcd_text:
+000023r 1  BD rr rr         lda lcd_text,x
+000026r 1  F0 09            beq @done
+000028r 1  85 rr            sta LCD::byte
+00002Ar 1  20 rr rr         jsr LCD::write_when_ready
+00002Dr 1  E8               inx
+00002Er 1  4C rr rr         jmp @send_lcd_text
+000031r 1               @done:
+000031r 1               
+000031r 1  A2 00            ldx #0
+000033r 1               @send_console_text:
+000033r 1  BD rr rr         lda console_text,x
+000036r 1  F0 09            beq @done2
+000038r 1  85 rr            sta UART::byte
+00003Ar 1  20 rr rr         jsr UART::write_when_ready
+00003Dr 1  E8               inx
+00003Er 1  4C rr rr         jmp @send_console_text
+000041r 1               @done2:
+000041r 1  20 rr rr         jsr UART::write_crnl_when_ready
+000044r 1               
+000044r 1  4C rr rr         jmp __WOZMON_START__
+000047r 1               
+000047r 1               

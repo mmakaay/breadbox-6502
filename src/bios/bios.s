@@ -28,6 +28,12 @@ BIOS_S = 1
 .include "bios/lcd.s"
 .include "bios/uart.s"
 
+; WozMon.
+.ifdef INCLUDE_WOZMON
+    .include "bios/wozmon.s"
+    .segment "BIOS" ; Segment is set to "WOZMON" by the include.
+.endif
+
 .scope BIOS
 
     boot:
@@ -96,7 +102,7 @@ BIOS_S = 1
 ; Prevent build warnings when a segment is not used in a project.
 .segment "STACK"
 .segment "RAM"
-.segment "DATA"
+.segment "WOZMON"
 
 ; Make sure that code without segment after including this uses CODE.
 .segment "CODE"

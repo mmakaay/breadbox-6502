@@ -4,12 +4,9 @@
 ; Differences with the original:
 ; - No hard-coded memory addresses, but using the linker for
 ;   assigning these automatically.
-; - Serial console is used for output.
-; - Output is written using `UART::write_text`, which expands
-;   CR to CR+LF for correct terminal line endings. Otherwise, the
-;   terminal client does not move to the next line on carriage
-;   return, unless the client is especially configured to treat
-;   "\r" as "\r\n".
+; - Serial console is used for output, via UART::write_text
+;   which automatically expands CR to CR+LF for correct terminal
+;   line endings.
 ; - The Apple II only supports upper case, resulting in the
 ;   the original code also only working with upper case input.
 ;   This modified code converts all input to upper case, so
@@ -21,11 +18,15 @@
 ; program requires a small modification. The Apple II example
 ; writes the code directly into the zero page, but that is also in
 ; use by our BIOS code. Therefore, a different memory location
-; must be used for this. For example:
+; must be used for this. For example, use $2000:
 ;
-;     2000: A9 00 AA 20 EF FF E8 8A 4C 02 20
+;     2000:A9 00 AA 20 EF FF E8 8A 4C 02 20
 ;
-; Just for fun: this disassembles into the following code:
+; After entering the code, the program can be started using:
+;
+;     2000R
+;
+; The bytes disassemble into the following code:
 ;
 ;     2000: A9 00     LDA #$00         ; A = 0
 ;     2002: AA        TAX              ; X = A
@@ -45,197 +46,205 @@ BIOS_WOZMON_S = 1
 
     .segment "ZEROPAGE"
 
-    XAML: .res 1       ; Last "opened" location Low
-    XAMH: .res 1       ; Last "opened" location High
-    STL:  .res 1       ; Store address Low
-    STH:  .res 1       ; Store address High
-    L:    .res 1       ; Hex value parsing Low
-    H:    .res 1       ; Hex value parsing High
-    YSAV: .res 1       ; Used to see if hex value is given
-    MODE: .res 1       ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
-    
+    XAML: .res 1                ; Last "opened" location Low
+    XAMH: .res 1                ; Last "opened" location High
+    STL:  .res 1                ; Store address Low
+    STH:  .res 1                ; Store address High
+    L:    .res 1                ; Hex value parsing Low
+    H:    .res 1                ; Hex value parsing High
+    YSAV: .res 1                ; Used to see if hex value is given
+    MODE: .res 1                ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
+
     .segment "RAM"
 
-    IN: .res $FF      ; Input buffer
+    IN: .res $FF                ; Input buffer
 
     .segment "WOZMON"
 
+    ; No hardware initialization required like the original, since
+    ; the BIOS initialization already setup the hardware for us.
     RESET:
-                    ; No hardware initialization required like the original, since
-                    ; the BIOS initialization already setup the hardware for us.
-
-                    LDA     #$1B           ; Begin with escape.
+        lda #$1B               ; Begin with escape.
 
     NOTCR:
-                    CMP     #$08           ; Backspace key?
-                    BEQ     BACKSPACE      ; Yes.
-                    CMP     #$1B           ; ESC?
-                    BEQ     ESCAPE         ; Yes.
-                    INY                    ; Advance text index.
-                    BPL     NEXTCHAR       ; Auto ESC if line longer than 127.
+        cmp #$08               ; Backspace key?
+        beq BACKSPACE          ; Yes.
+        cmp #$1B               ; ESC?
+        beq ESCAPE             ; Yes.
+        iny                    ; Advance text index.
+        bpl NEXTCHAR           ; Auto ESC if line longer than 127.
 
     ESCAPE:
-                    LDA     #$5C           ; "\".
-                    JSR     ECHO           ; Output it.
+        lda #$5C               ; "\".
+        jsr ECHO               ; Output it.
 
     GETLINE:
-                    LDA     #$0D           ; CR triggers CR+LF via ECHO.
-                    JSR     ECHO
+        lda #$0D               ; CR triggers CR+LF via ECHO.
+        jsr ECHO
 
-                    LDY     #$01           ; Initialize text index.
-    BACKSPACE:      DEY                    ; Back up text index.
-                    BMI     GETLINE        ; Beyond start of line, reinitialize.
+        ldy #$01               ; Initialize text index.
+    BACKSPACE:
+        dey                    ; Back up text index.
+        bmi GETLINE            ; Beyond start of line, reinitialize.
 
     NEXTCHAR:
-                    JSR     UART::read     ; Load character. B7 will be '0'.
-                    LDA     UART::byte     ; Get received byte.
-                    CMP     #$61           ; Lowercase letter?
-                    BCC     @upper
-                    SBC     #$20           ; Yes, convert to uppercase (carry set from CMP).
+        jsr UART::read         ; Wait for a character.
+        lda UART::byte         ; Get received byte.
+        cmp #$61               ; Lowercase letter?
+        bcc @upper
+        sbc #$20               ; Yes, convert to uppercase (carry set from CMP).
     @upper:
-                    STA     IN,Y           ; Add to text buffer.
-                    JSR     ECHO           ; Display character.
-                    CMP     #$0D           ; CR?
-                    BNE     NOTCR          ; No.
+        sta IN,y               ; Add to text buffer.
+        jsr ECHO               ; Display character.
+        cmp #$0D               ; CR?
+        bne NOTCR              ; No.
 
-                    LDY     #$FF           ; Reset text index.
-                    LDA     #$00           ; For XAM mode.
-                    TAX                    ; X=0.
+        ldy #$FF               ; Reset text index.
+        lda #$00               ; For XAM mode.
+        tax                    ; X=0.
     SETBLOCK:
-                    ASL
+        asl
     SETSTOR:
-                    ASL                    ; Leaves $7B if setting STOR mode.
-                    STA     MODE           ; $00 = XAM, $74 = STOR, $B8 = BLOK XAM.
+        asl                    ; Leaves $7B if setting STOR mode.
+        sta MODE               ; $00 = XAM, $74 = STOR, $B8 = BLOK XAM.
     BLSKIP:
-                    INY                    ; Advance text index.
+        iny                    ; Advance text index.
     NEXTITEM:
-                    LDA     IN,Y           ; Get character.
-                    CMP     #$0D           ; CR?
-                    BEQ     GETLINE        ; Yes, done this line.
-                    CMP     #$2E           ; "."?
-                    BCC     BLSKIP         ; Skip delimiter.
-                    BEQ     SETBLOCK       ; Set BLOCK XAM mode.
-                    CMP     #$3A           ; ":"?
-                    BEQ     SETSTOR        ; Yes, set STOR mode.
-                    CMP     #$52           ; "R"?
-                    BEQ     RUN            ; Yes, run user program.
-                    STX     L              ; $00 -> L.
-                    STX     H              ;    and H.
-                    STY     YSAV           ; Save Y for comparison
+        lda IN,y               ; Get character.
+        cmp #$0D               ; CR?
+        beq GETLINE            ; Yes, done this line.
+        cmp #$2E               ; "."?
+        bcc BLSKIP             ; Skip delimiter.
+        beq SETBLOCK           ; Set BLOCK XAM mode.
+        cmp #$3A               ; ":"?
+        beq SETSTOR            ; Yes, set STOR mode.
+        cmp #$52               ; "R"?
+        beq RUN                ; Yes, run user program.
+        stx L                  ; $00 -> L.
+        stx H                  ;    and H.
+        sty YSAV               ; Save Y for comparison
 
     NEXTHEX:
-                    LDA     IN,Y           ; Get character for hex test.
-                    EOR     #$30           ; Map digits to $0-9.
-                    CMP     #$0A           ; Digit?
-                    BCC     DIG            ; Yes.
-                    ADC     #$88           ; Map letter "A"-"F" to $FA-FF.
-                    CMP     #$FA           ; Hex letter?
-                    BCC     NOTHEX         ; No, character not hex.
+        lda IN,y               ; Get character for hex test.
+        eor #$30               ; Map digits to $0-9.
+        cmp #$0A               ; Digit?
+        bcc DIG                ; Yes.
+        adc #$88               ; Map letter "A"-"F" to $FA-FF.
+        cmp #$FA               ; Hex letter?
+        bcc NOTHEX             ; No, character not hex.
     DIG:
-                    ASL
-                    ASL                    ; Hex digit to MSD of A.
-                    ASL
-                    ASL
+        asl
+        asl                    ; Hex digit to MSD of A.
+        asl
+        asl
 
-                    LDX     #$04           ; Shift count.
+        ldx #$04               ; Shift count.
     HEXSHIFT:
-                    ASL                    ; Hex digit left, MSB to carry.
-                    ROL     L              ; Rotate into LSD.
-                    ROL     H              ; Rotate into MSD's.
-                    DEX                    ; Done 4 shifts?
-                    BNE     HEXSHIFT       ; No, loop.
-                    INY                    ; Advance text index.
-                    BNE     NEXTHEX        ; Always taken. Check next character for hex.
+        asl                    ; Hex digit left, MSB to carry.
+        rol L                  ; Rotate into LSD.
+        rol H                  ; Rotate into MSD's.
+        dex                    ; Done 4 shifts?
+        bne HEXSHIFT           ; No, loop.
+        iny                    ; Advance text index.
+        bne NEXTHEX            ; Always taken. Check next character for hex.
 
     NOTHEX:
-                    CPY     YSAV           ; Check if L, H empty (no hex digits).
-                    BEQ     ESCAPE         ; Yes, generate ESC sequence.
+        cpy YSAV               ; Check if L, H empty (no hex digits).
+        beq ESCAPE             ; Yes, generate ESC sequence.
 
-                    BIT     MODE           ; Test MODE byte.
-                    BVC     NOTSTOR        ; B6=0 is STOR, 1 is XAM and BLOCK XAM.
+        bit MODE               ; Test MODE byte.
+        bvc NOTSTOR            ; B6=0 is STOR, 1 is XAM and BLOCK XAM.
 
-                    LDA     L              ; LSD's of hex data.
-                    STA     (STL,X)        ; Store current 'store index'.
-                    INC     STL            ; Increment store index.
-                    BNE     NEXTITEM       ; Get next item (no carry).
-                    INC     STH            ; Add carry to 'store index' high order.
-    TONEXTITEM:     JMP     NEXTITEM       ; Get next command item.
+        lda L                  ; LSD's of hex data.
+        sta (STL,x)            ; Store current 'store index'.
+        inc STL                ; Increment store index.
+        bne NEXTITEM           ; Get next item (no carry).
+        inc STH                ; Add carry to 'store index' high order.
+    TONEXTITEM:
+        jmp NEXTITEM           ; Get next command item.
 
     RUN:
-                    JMP     (XAML)         ; Run at current XAM index.
+        jmp (XAML)             ; Run at current XAM index.
 
     NOTSTOR:
-                    BMI     XAMNEXT        ; B7 = 0 for XAM, 1 for BLOCK XAM.
+        bmi XAMNEXT            ; B7 = 0 for XAM, 1 for BLOCK XAM.
 
-                    LDX     #$02           ; Byte count.
-    SETADR:         LDA     L-1,X          ; Copy hex data to
-                    STA     STL-1,X        ;  'store index'.
-                    STA     XAML-1,X       ; And to 'XAM index'.
-                    DEX                    ; Next of 2 bytes.
-                    BNE     SETADR         ; Loop unless X = 0.
+        ldx #$02               ; Byte count.
+    SETADR:
+        lda L-1,x              ; Copy hex data to
+        sta STL-1,x            ;  'store index'.
+        sta XAML-1,x           ; And to 'XAM index'.
+        dex                    ; Next of 2 bytes.
+        bne SETADR             ; Loop unless X = 0.
 
     NXTPRNT:
-                    BNE     PRDATA         ; NE means no address to print.
-                    LDA     #$0D           ; CR triggers CR+LF via ECHO.
-                    JSR     ECHO
-                    LDA     XAMH           ; 'Examine index' high-order byte.
-                    JSR     PRBYTE         ; Output it in hex format.
-                    LDA     XAML           ; Low-order 'examine index' byte.
-                    JSR     PRBYTE         ; Output it in hex format.
-                    LDA     #$3A           ; ":".
-                    JSR     ECHO           ; Output it.
+        bne PRDATA             ; NE means no address to print.
+        lda #$0D               ; CR triggers CR+LF via ECHO.
+        jsr ECHO
+        lda XAMH               ; 'Examine index' high-order byte.
+        jsr PRBYTE             ; Output it in hex format.
+        lda XAML               ; Low-order 'examine index' byte.
+        jsr PRBYTE             ; Output it in hex format.
+        lda #$3A               ; ":".
+        jsr ECHO               ; Output it.
 
     PRDATA:
-                    LDA     #$20           ; Blank.
-                    JSR     ECHO           ; Output it.
-                    LDA     (XAML,X)       ; Get data byte at 'examine index'.
-                    JSR     PRBYTE         ; Output it in hex format.
-    XAMNEXT:        STX     MODE           ; 0 -> MODE (XAM mode).
-                    LDA     XAML
-                    CMP     L              ; Compare 'examine index' to hex data.
-                    LDA     XAMH
-                    SBC     H
-                    BCS     TONEXTITEM     ; Not less, so no more data to output.
+        lda #$20               ; Blank.
+        jsr ECHO               ; Output it.
+        lda (XAML,x)           ; Get data byte at 'examine index'.
+        jsr PRBYTE             ; Output it in hex format.
+    XAMNEXT:
+        stx MODE               ; 0 -> MODE (XAM mode).
+        lda XAML
+        cmp L                  ; Compare 'examine index' to hex data.
+        lda XAMH
+        sbc H
+        bcs TONEXTITEM         ; Not less, so no more data to output.
 
-                    INC     XAML
-                    BNE     MOD8CHK        ; Increment 'examine index'.
-                    INC     XAMH
+        inc XAML
+        bne MOD8CHK            ; Increment 'examine index'.
+        inc XAMH
 
     MOD8CHK:
-                    LDA     XAML           ; Check low-order 'examine index' byte
-                    AND     #$07           ; For MOD 8 = 0
-                    BPL     NXTPRNT        ; Always taken.
+        lda XAML               ; Check low-order 'examine index' byte
+        and #$07               ; For MOD 8 = 0
+        bpl NXTPRNT            ; Always taken.
 
+    ; Print the byte in A as two hex characters.
     PRBYTE:
-                    PHA                    ; Save A for LSD.
-                    LSR
-                    LSR
-                    LSR                    ; MSD to LSD position.
-                    LSR
-                    JSR     PRHEX          ; Output hex digit.
-                    PLA                    ; Restore A.
+        pha                    ; Save A for LSD.
+        lsr
+        lsr
+        lsr                    ; MSD to LSD position.
+        lsr
+        jsr PRHEX              ; Output hex digit.
+        pla                    ; Restore A.
 
+    ; Print the lower nibble of A as a hex character.
+    ; Falls through to ECHO.
     PRHEX:
-                    AND     #$0F           ; Mask LSD for hex print.
-                    ORA     #$30           ; Add "0".
-                    CMP     #$3A           ; Digit?
-                    BCC     ECHO           ; Yes, output it.
-                    ADC     #$06           ; Add offset for letter.
+        and #$0F               ; Mask LSD for hex print.
+        ora #$30               ; Add "0".
+        cmp #$3A               ; Digit?
+        bcc ECHO               ; Yes, output it.
+        adc #$06               ; Add offset for letter.
 
-                    NOP                    ; A bunch of NOP instructions, in order to move
-                    NOP                    ; the ECHO routine to the same location as defined
-                    NOP                    ; in the original Apple II manual ($FFCF).
-                    NOP
-                    NOP
-                    NOP
-                    NOP
-                    NOP
-                    NOP
+        ; NOP padding to keep ECHO at the well-known address $FFEF.
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 
+    ; Output the character in A to the serial console.
     ECHO:
-                    STA     UART::byte
-                    JSR     UART::write_text
-                    RTS
+        sta UART::byte
+        jsr UART::write_text
+        rts
 
 .endscope
 

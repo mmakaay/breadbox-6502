@@ -16,11 +16,11 @@
 .ifndef BIOS_GPIO_VIA_W65C22_S
 BIOS_GPIO_VIA_W65C22_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope DRIVER
 
-.segment "BIOS"
+.segment "KERNAL"
 
     .proc set_inputs
         pha

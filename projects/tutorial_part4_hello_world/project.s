@@ -5,7 +5,7 @@
 ; Result   : https://youtu.be/FY3zTUaykVo?t=1614
 ; Code     : https://eater.net/downloads/hello-world.s
 ;
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 main:
     set_byte LCD::byte, #'H'
@@ -47,4 +47,4 @@ main:
     set_byte LCD::byte, #'!'
     jsr LCD::write
 
-    jmp BIOS::halt
+    jmp KERNAL::halt

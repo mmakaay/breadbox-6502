@@ -9,7 +9,7 @@
 ; LEDs blink. At high speeds, the output will just look a bunch
 ; of active LEDs.
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 main:
     set_byte GPIO::port, GPIO::PORTB  ; Select VIA port B

@@ -21,13 +21,13 @@
 .ifndef BIOS_LCD_S
 BIOS_LCD_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope LCD
     .if ::LCD_DRIVER = ::HD44780_8BIT
-        .include "bios/lcd/hd44780_8bit.s"
+        .include "breadbox/lcd/hd44780_8bit.s"
     .elseif ::LCD_DRIVER = ::HD44780_4BIT
-        .include "bios/lcd/hd44780_4bit.s"
+        .include "breadbox/lcd/hd44780_4bit.s"
     .else
         .error "LCD_DRIVER invalid (see config-example.s for options)"
     .endif
@@ -36,7 +36,7 @@ BIOS_LCD_S = 1
 
     byte: .res 1 ; Zero page byte, used as argument or return value
 
-.segment "BIOS"
+.segment "KERNAL"
 
     ; -------------------------------------------------------------
     ; Access to the low level driver API

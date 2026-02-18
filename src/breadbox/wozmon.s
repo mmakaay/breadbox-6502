@@ -1,5 +1,5 @@
 ; -----------------------------------------------------------------
-; WozMon, modified for the breadboard computer BIOS
+; WozMon, modified for the breadboard computer KERNAL
 ;
 ; Differences with the original:
 ; - No hard-coded memory addresses, but using the linker for
@@ -17,7 +17,7 @@
 ; Even with ECHO at the expected position in memory, the test
 ; program requires a small modification. The Apple II example
 ; writes the code directly into the zero page, but that is also in
-; use by our BIOS code. Therefore, a different memory location
+; use by our KERNAL code. Therefore, a different memory location
 ; must be used for this. For example, use $2000:
 ;
 ;     2000:A9 00 AA 20 EF FF E8 8A 4C 02 20
@@ -40,7 +40,7 @@
 .ifndef BIOS_WOZMON_S
 BIOS_WOZMON_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope WOZMON
 
@@ -62,7 +62,7 @@ BIOS_WOZMON_S = 1
 .segment "WOZMON"
 
     ; No hardware initialization required like the original, since
-    ; the BIOS initialization already set up the hardware for us.
+    ; the KERNAL initialization already set up the hardware for us.
     RESET:
         lda #$1B               ; Begin with escape.
 

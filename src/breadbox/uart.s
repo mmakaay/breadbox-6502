@@ -14,7 +14,7 @@
 .ifndef BIOS_UART_S
 BIOS_UART_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope UART
 
@@ -25,16 +25,16 @@ BIOS_UART_S = 1
 
     ; Import the hardware driver.
     .if ::UART_DRIVER = ::UM6551
-        .include "bios/uart/um6551.s"
+        .include "breadbox/uart/um6551.s"
     .elseif ::UART_DRIVER = ::UM6551_IRQ
-        .include "bios/uart/um6551_irq.s"
+        .include "breadbox/uart/um6551_irq.s"
     .endif
 
 .segment "ZEROPAGE"
 
     byte: .res 1               ; Input/output byte for read/write
 
-.segment "BIOS"
+.segment "KERNAL"
 
     ; -------------------------------------------------------------
     ; Low level driver API (no waiting)

@@ -1,9 +1,9 @@
 ; -----------------------------------------------------------------
-; BIOS for my Ben Eater-style breadboard computer
+; KERNAL for my Ben Eater-style breadboard computer
 ; -----------------------------------------------------------------
 
-.ifndef BIOS_S
-BIOS_S = 1
+.ifndef KERNAL_S
+KERNAL_S = 1
 
 ; I use a W65C02, but let's keep the code compatible for 6502. This
 ; is good for compatibility, but also for forced-upon compatibility
@@ -17,24 +17,24 @@ BIOS_S = 1
 .include "macros/macros.s"
 
 ; Include global constants and the configuration file.
-.include "bios/constants.s"
+.include "breadbox/constants.s"
 .include "config.inc"
 
 ; Include boot and interrupt vectors.
-.include "bios/vectors.s"
+.include "breadbox/vectors.s"
 
 ; Hardware Abstraction Layer (HAL) and hardware drivers.
-.include "bios/io/w65c22.s"
-.include "bios/gpio.s"
+.include "breadbox/io/w65c22.s"
+.include "breadbox/gpio.s"
 .ifdef INCLUDE_LCD
     .if INCLUDE_LCD
         HAS_LCD = YES
-        .include "bios/lcd.s"
+        .include "breadbox/lcd.s"
     .endif
 .endif
 .ifdef INCLUDE_UART
     .if INCLUDE_UART
-        .include "bios/uart.s"
+        .include "breadbox/uart.s"
         HAS_UART = YES
     .endif
 .endif
@@ -45,13 +45,13 @@ BIOS_S = 1
         .ifndef HAS_UART
             .error "WoZMon cannot be enabled without UART support"
         .endif
-        .include "bios/wozmon.s"
+        .include "breadbox/wozmon.s"
     .endif
 .endif
 
-.scope BIOS
+.scope KERNAL
 
-.segment "BIOS"
+.segment "KERNAL"
 
     boot:
         ldx #$ff  ; Initialize stack pointer
@@ -67,7 +67,7 @@ BIOS_S = 1
 
         jmp main  ; Note: `main` must be implemented by application
 
-    ; Can be jumped to (jmp BIOS::halt), to halt the computer.
+    ; Can be jumped to (jmp KERNAL::halt), to halt the computer.
     halt:
         jmp halt
 

@@ -27,7 +27,7 @@
 .ifndef BIOS_GPIO_S
 BIOS_GPIO_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope GPIO
 
@@ -38,11 +38,11 @@ BIOS_GPIO_S = 1
     value: .res 1              ; Pin values / data byte
     temp:  .res 1              ; In-subroutine temporary storage
 
-.segment "BIOS"
+.segment "KERNAL"
 
     ; Import the hardware driver.
     ; Currently, there is only one.
-    .include "bios/gpio/w65c22_via.s"
+    .include "breadbox/gpio/w65c22_via.s"
 
     ; Port selection constants.
     PORTA = 1

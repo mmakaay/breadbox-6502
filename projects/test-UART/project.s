@@ -9,7 +9,7 @@
 ; This can be used to check if the serial communication is working correctly.
 ; ----------------------------------------------------------------------------
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .segment "ZEROPAGE"
 

@@ -11,11 +11,11 @@
 .ifndef BIOS_LCD_HD44780_4BIT_S
 BIOS_LCD_HD44780_4BIT_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .scope DRIVER
 
-.segment "BIOS"
+.segment "KERNAL"
 
     ; -----------------------------------------------------------------
     ; Configuration (for example configuration, see config-example.inc)
@@ -33,7 +33,7 @@ BIOS_LCD_HD44780_4BIT_S = 1
     ; Implementation
     ; -----------------------------------------------------------------
 
-    .include "bios/lcd/hd44780_common.s"
+    .include "breadbox/lcd/hd44780_common.s"
 
     .proc init
         ; Initialize the LCD in 4-bit mode.

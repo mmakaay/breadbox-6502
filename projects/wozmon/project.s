@@ -1,6 +1,6 @@
 INCLUDE_WOZMON = YES
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .import __WOZMON_START__
 

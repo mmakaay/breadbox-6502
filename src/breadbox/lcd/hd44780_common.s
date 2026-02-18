@@ -7,9 +7,9 @@
 .ifndef BIOS_LCD_HD44780_COMMON_S
 BIOS_LCD_HD44780_COMMON_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
-.segment "BIOS"
+.segment "KERNAL"
     ; Build pin mask that can be used for GPIO calls, based on the
     ; pin configuration as provided by the main driver code.
     CMND_PINS = (CMND_PIN_EN | CMND_PIN_RWB | CMND_PIN_RS)

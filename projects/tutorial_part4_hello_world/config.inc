@@ -1,4 +1,4 @@
-; BIOS configuration, overriding src/config.inc
+; KERNAL configuration, overriding src/config.inc
 ;
 ; This configuration matches the hardware setup as used in
 ; Ben Eater's tutorial video.

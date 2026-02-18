@@ -5,9 +5,9 @@
 .ifndef BIOS_UART_6551_COMMON_S
 BIOS_UART_6551_COMMON_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
-.segment "BIOS"
+.segment "KERNAL"
 
 ; Registers
 DATA_REGISTER   = __UART_START__ + $0

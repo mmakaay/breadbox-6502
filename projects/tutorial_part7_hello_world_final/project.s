@@ -12,7 +12,7 @@
 ; below, we can make use of the high level `LCD::write`
 ; subroutine.
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 message: .asciiz "Hello, world!"
 
@@ -26,4 +26,4 @@ main:
     inx                ; Move to the next byte position
     jmp @loop          ; And repeat
 @done:
-    jmp BIOS::halt     ; Halt the computer
+    jmp KERNAL::halt   ; Halt the computer

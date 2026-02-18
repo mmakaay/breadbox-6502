@@ -9,7 +9,7 @@ PORTA_DIR = $6003
 ; Suppress warnings about segments that are in the breadboard.cfg memory
 ; layout, but that are not used in this minimal application.
 .segment "ZEROPAGE"
-.segment "BIOS"
+.segment "KERNAL"
 .segment "VARIABLES"
 
 .segment "CODE"

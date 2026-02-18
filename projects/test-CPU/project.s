@@ -10,7 +10,7 @@
 ; The result is shown on the LCD display.
 ; -----------------------------------------------------------------
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 .segment "ZEROPAGE"
 
@@ -55,4 +55,4 @@
         bne @loop       ; branch always (message < 256 bytes)
 
     @done:
-        jmp BIOS::halt
+        jmp KERNAL::halt

@@ -7,12 +7,12 @@
     nmi_vector: .res 2
     irq_vector: .res 2
 
-.segment "BIOS"
+.segment "KERNAL"
 
     .proc init
         ; Setup the default vectors and interrupt handling:
         ; 
-        ; - Reset vector points to BIOS::boot
+        ; - Reset vector points to KERNAL::boot
         ; - Null NMI handler
         ; - Null IRQ handler
         ; - Interrupts disabled
@@ -20,7 +20,7 @@
         ; Out:
         ;   A = clobbered
 
-        ; Disable interrupts. If code that uses this BIOS requires
+        ; Disable interrupts. If code that uses this KERNAL requires
         ; interrupt handling, these must be enabled using `cli`.
         sei
 
@@ -45,7 +45,7 @@
 .segment "VECTORS"
 
     .word dispatch_nmi         ; Non-Maskable Interrupt vector
-    .word ::BIOS::boot         ; Reset vector
+    .word ::KERNAL::boot         ; Reset vector
     .word dispatch_irq         ; IRQ vector
 
 .endscope

@@ -8,7 +8,7 @@
 .ifndef BIOS_VIA_W65C22_S
 BIOS_VIA_W65C22_S = 1
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 
 ; The start of the VIA register space is configured in the
 ; linker configuration. The linker provides the starting
@@ -17,7 +17,7 @@ BIOS_VIA_W65C22_S = 1
 
 .scope IO
 
-.segment "BIOS"
+.segment "KERNAL"
 
     ; Port registers (used by GPIO driver via absolute,Y addressing).
     PORTB_REGISTER = __IO_START__ + $0 ; I/O register for port B

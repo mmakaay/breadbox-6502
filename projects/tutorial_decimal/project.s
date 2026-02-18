@@ -9,7 +9,7 @@
 ; included in projects) provides the subroutine `fmtdec16` for this
 ; purpose. Below, you can find how it is used.
 
-.include "bios/bios.s"
+.include "breadbox/kernal.s"
 .include "stdlib/fmtdec16.s"
 
 binary_value:  .word 1729
@@ -35,4 +35,4 @@ main:
     jmp @loop             ; Process next character.
 
 @halt:
-    jmp BIOS::halt
+    jmp KERNAL::halt

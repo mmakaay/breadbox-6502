@@ -1,7 +1,7 @@
-; BIOS configuration
+; KERNAL configuration
 ;
 ; All named constants used below (HD44780_8BIT, PORTA, P5, etc.)
-; are defined in bios/constants.s, which is loaded before this
+; are defined in breadbox/constants.s, which is loaded before this
 ; file. See that file for the full list of available names.
 
 ; --------------------------------------------------------------------

@@ -14,6 +14,15 @@
 INCLUDE_WOZMON = YES
 
 ; --------------------------------------------------------------------
+; IO bus device
+; --------------------------------------------------------------------
+
+INCLUDE_IO = YES
+
+IO_DRIVER  = W65C22
+IO_ADDRESS = $6000
+
+; --------------------------------------------------------------------
 ; UART for serial communication
 ;
 ; Since nobody ever seems to be using anything else than the typical
@@ -24,6 +33,7 @@ INCLUDE_WOZMON = YES
 INCLUDE_UART = YES
 
 UART_DRIVER    = UM6551
+UART_ADDRESS   = $5000
 UART_BAUD_RATE = BAUD19200
 
 ; Hardware flow control CTS pin (UM6551 driver only).
@@ -38,8 +48,8 @@ UART_BAUD_RATE = BAUD19200
 ; can cause occasional missed flow control transitions.
 ;
 ; Default: PA7 (port A, pin 7).
-;UART_CTS_PORT  = PORTA
-;UART_CTS_PIN   = P7
+UART_CTS_PORT  = PORTA
+UART_CTS_PIN   = P7
 
 ; --------------------------------------------------------------------
 ; LCD display

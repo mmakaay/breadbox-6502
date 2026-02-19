@@ -4,11 +4,11 @@ This repository provides a KERNAL for 6502 breadboard computers.
 No, "KERNAL" is not a typo: [see Wikipedia](https://en.wikipedia.org/wiki/KERNAL)
 
 It was inspired by Ben Eater's 6502 breadboard tutorial series, and my desire
-to revive and brush up my 1982 assembly skill.
+to revive and brush up my 1982 assembly skills.
 
 See Ben's website at [https://eater.net](https://eater.net) for many useful
 resources and a very binge-worthy collection of tutorial videos
-(only binge-worthy, if you are into this kind of thing, of course).
+(only binge-worthy if you are into this kind of thing, of course).
 
 Of course, this code will work equally well for breadboard computers that have
 been materialized as a real PCB.
@@ -27,7 +27,7 @@ KERNAL:
 - Boot sequence that initializes the system and hardware
 - Project-specific `main` routine, called by boot sequence after initialization
 - IRQ jump vectors (for IRQ and NMI) can be changed dynamically
-- Macros for often repeated bits of code
+- Macros for commonly repeated bits of code
 - A stdlib (standard library) with routines you can include in your project
 - Written using the feature-rich `ca65` assembler from the `cc65` project
 
@@ -53,6 +53,7 @@ hello:
 main:
     ldx #0               ; Byte position to read from `hello`
 
+@loop:
     lda hello,x          ; Read next byte
     beq @done            ; Stop at terminating null-byte
     sta LCD::byte        ; Line up byte for the LCD display
@@ -63,15 +64,15 @@ main:
     jmp KERNAL::halt     ; Halt the computer
 ```
 
-What you can see here, is that hardware is abstracted by the KERNAL's LCD HAL
-layer, and that the code only has to worry about providing the required
-bytes to the LCD display.
+What you can see here is that hardware is abstracted by the KERNAL's LCD HAL
+layer, and that the code only has to worry about providing the required bytes
+to the LCD display.
 
 This code is also available as a project in `projects/hello-world`.
 
 ## Writing assembly code
 
-Wasm is what Ben starts out with in his videos, but later on he uses the "cc65" suite.
+`vasm` is what Ben starts out with in his videos, but later on he uses the `cc65` suite.
 This suite provides *a lot* of useful features, and I have written all assembly code
 for this repository based on this.
 
@@ -99,12 +100,12 @@ can be found in `src/config-example.inc`.
 
 Sounds difficult? No worries... The projects (under `projects/*`) that
 re-implement the code from Ben's tutorial videos, all have a configuration
-that matches the hardware layout at used in the videos. So if you are
+that matches the hardware layout as used in the videos. So if you are
 following along with the videos, the related tutorial projects should
 work as-is.
 
-For information on configuration options, see the `sr/config-example.s`
-file. Copy this file to `src/config.s` or your own project directory to
+For information on configuration options, see the `src/config-example.inc`
+file. Copy this file to `src/config.inc` or your own project directory to
 get started.
 
 ## Build a ROM
@@ -126,7 +127,7 @@ cd projects/some-project
 just build  # Compiles *.s files, and links them into a `rom.bin`.
 just write  # Writes `rom.bin` to EEPROM (given you use AT28C256 like Ben).
 just dis    # Shows a disassembly of the created `rom.bin`.
-just dump   # Shows a hexdump of the creatd `rom.bin`.
+just dump   # Shows a hexdump of the created `rom.bin`.
 ```
 
 It is not required to use `just` of course. You can also execute the
@@ -137,10 +138,10 @@ point for this.
 
 For writing the ROM, I use a T48 writer.
 
-Lesson leared: Do connect the device *directly* to a USB-C port on the computer.
+Lesson learned: connect the device *directly* to a USB-C port on the computer.
 It won't work when connected to a HUB, recognizable by a blinking LED.
 
-There is no vendor software for MacBook, but the open source application
+There is no vendor software for macOS, but the open source application
 `minipro` can be used. This can be installed from homebrew with
 `brew install minipro`.
 
@@ -158,8 +159,8 @@ just write
 
 The EEPROM might be write protected. In that case, the extra option `-u` can
 be used. The `minipro` application will warn about write protected EEPROMs
-and suggest this flag. I had to do disable write protection when I wrote to
-the EEPROM for the first time.
+and suggest this flag. I had to disable write protection when I wrote to the
+EEPROM for the first time.
 
 ```bash
 minipro -u -p AT28C256 -w rom_image.bin

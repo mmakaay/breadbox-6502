@@ -97,7 +97,7 @@ A small macro makes device selection readable:
 
 ### Step 2 — Move hardware addresses to config.inc
 
-The VIA base address currently comes from the linker config (`breadboard.cfg`)
+The VIA base address currently comes from the linker config (`breadbox.cfg`)
 via an imported symbol. For multi-device support, it is simpler to define device
 base addresses as assembly constants in `config.inc`, alongside the existing
 driver and pin configuration:
@@ -112,7 +112,7 @@ UART_BASE = $5000               ; UART base address
 ```
 
 This replaces the linker `define = yes` / `.import __IO_START__` pattern for
-these devices. The linker memory regions in `breadboard.cfg` still need entries
+these devices. The linker memory regions in `breadbox.cfg` still need entries
 for the hardware address ranges (to prevent the linker from placing code there),
 but the actual addresses used in driver code come from `config.inc`.
 

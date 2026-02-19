@@ -7,7 +7,7 @@ build: clean
     echo "Building rom.bin for project ..."
     cd "{{invocation_directory()}}"
     ca65 -I "{{invocation_directory()}}" -I "{{justfile_directory()}}/src/" *.s
-    ld65 --config "{{justfile_directory()}}/src/breadboard.cfg" *.o -o rom.bin
+    ld65 --config "{{justfile_directory()}}/src/breadbox.cfg" *.o -o rom.bin
 
 dump:
     hexdump -C "{{invocation_directory()}}/rom.bin"

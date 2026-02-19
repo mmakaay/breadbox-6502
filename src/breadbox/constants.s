@@ -24,8 +24,8 @@ HD44780_8BIT = 1      ; HD44780, 8-bit data bus
 HD44780_4BIT = 2      ; HD44780, 4-bit data bus
 
 ; UART
-UM6551       = 3      ; UM6551, only with RXFULL/TXEMPTY polling
-UM6551_IRQ   = 4      ; UM6551, using IRQ, buffering and flow control
+UM6551       = 3      ; UM6551, IRQ-driven with buffering and flow control
+UM6551_POLL  = 4      ; UM6551, simple RXFULL/TXEMPTY polling
 
 ; --- Booleans ------------------------------------------------------
 

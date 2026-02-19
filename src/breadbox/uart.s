@@ -26,8 +26,8 @@ KERNAL_UART_S = 1
     ; Import the hardware driver.
     .if ::UART_DRIVER = ::UM6551
         .include "breadbox/uart/um6551.s"
-    .elseif ::UART_DRIVER = ::UM6551_IRQ
-        .include "breadbox/uart/um6551_irq.s"
+    .elseif ::UART_DRIVER = ::UM6551_POLL
+        .include "breadbox/uart/um6551_poll.s"
     .endif
 
 .segment "ZEROPAGE"

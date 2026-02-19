@@ -59,8 +59,8 @@ src/
     lcd/hd44780_4bit.s    # HD44780 4-bit driver
     lcd/hd44780_common.s  # Shared LCD constants (BUSY_FLAG, clr, home)
     uart.s                # UART HAL (read, write, write_text, check_rx/tx)
-    uart/um6551.s         # UM6551 polling driver
-    uart/um6551_irq.s     # UM6551 IRQ-driven driver
+    uart/um6551.s         # UM6551 driver (IRQ, buffered, flow control)
+    uart/um6551_poll.s    # UM6551 polling driver (simple, no IRQ)
     uart/um6551_common.s  # Shared UART register definitions
     wozmon.s              # WozMon (Apple I monitor, adapted for KERNAL)
   macros/                 # General-purpose macros (set_byte, set_word, cp_address, etc.)

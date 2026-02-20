@@ -52,11 +52,12 @@ UART_DRIVER    = W65C51N
 UART_ADDRESS   = $5000
 UART_BAUD_RATE = 19200
 
-; Hardware flow control CTS pin (UM6551 and W65C51N drivers only).
+; Hardware flow control RTS pin (UM6551 and W65C51N drivers only).
 ;
-; The CTS signal is directly driven via a GPIO pin, rather than
-; through the 6551's own DTR or RTS pins (both have side effects that
-; make them unusable for clean flow control).
+; The RTS signal is driven via a VIA GPIO pin, rather than through
+; the ACIA's own RTS or DTR pins (both have side effects that make
+; them unusable for clean flow control). The pin directly drives the
+; RS232 RTS line, which connects to the remote side's CTS input.
 ;
 ; The pin can be on either VIA port. However, avoid placing it on a
 ; port that is heavily used by other drivers (e.g. LCD data bus),
@@ -64,8 +65,8 @@ UART_BAUD_RATE = 19200
 ; can cause occasional missed flow control transitions.
 ;
 ; Default: PA7 (port A, pin 7).
-UART_CTS_PORT  = PORTA
-UART_CTS_PIN   = P7
+UART_RTS_PORT  = PORTA
+UART_RTS_PIN   = P7
 
 ; --------------------------------------------------------------------
 ; LCD display

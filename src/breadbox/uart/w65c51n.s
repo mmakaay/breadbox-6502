@@ -4,7 +4,7 @@
 ; Drives the WDC W65C51N ACIA for RS232 serial communication.
 ;
 ; This implementation uses IRQ-driven RX with a circular buffer and
-; CTS flow control, identical to the UM6551 driver. The TX side is
+; RTS flow control, identical to the UM6551 driver. The TX side is
 ; different: the W65C51N has a hardware bug that makes TXEMPTY and
 ; TX interrupts non-functional, so transmission uses a software
 ; delay after each byte.
@@ -17,7 +17,7 @@
 ;   followed by a calibrated delay for one character time. The write
 ;   procedure blocks during this delay, but RX interrupts continue
 ;   to be serviced (the delay does not disable interrupts).
-; - Flow control: CTS signalling via a VIA GPIO pin, to tell the remote
+; - Flow control: RTS signalling via a VIA GPIO pin, to tell the remote
 ;   side to stop sending when the read buffer is filling up.
 ;
 ; About the flow control approach:
@@ -62,13 +62,13 @@
 ;
 ;     I/O *)
 ;    ┌──────────┐
-;    │ GPIO PIN │───► RS232 CTS (pin acts as RTS pin, active low, 1 = stop flow)
+;    │ GPIO PIN │───► RS232 RTS (directly drives remote CTS, active low, 1 = stop)
 ;    └──────────┘
 ;
 ; *) Differences in wiring, compared to the `w65c51n_poll.s` implementation:
 ; - IRQB is connected to the IRQB pin on the CPU.
-; - A VIA GPIO pin drives the RS232 CTS line for flow control.
-;   Configurable via UART_CTS_PORT/UART_CTS_PIN in config.inc.
+; - A VIA GPIO pin drives the RS232 RTS line for flow control.
+;   Configurable via UART_RTS_PORT/UART_RTS_PIN in config.inc.
 ;
 ; About the IRQB connection:
 ; - Be sure to add a pull-up resistor to IRQB on the CPU. The IRQB pin on
@@ -107,11 +107,11 @@ KERNAL_UART_W65C51N_S = 1
     byte = UART::byte
 
     ; -----------------------------------------------------------------
-    ; Hardware flow control CTS pin.
+    ; Hardware flow control RTS pin.
     ;
     ; Flow control is driven via a VIA GPIO pin (instead of the ACIA's
     ; DTR or RTS pins, which have side effects that make them unusable
-    ; for clean flow control). The pin directly drives the RS232 CTS
+    ; for clean flow control). The pin directly drives the RS232 RTS
     ; line: HIGH = stop sending, LOW = send.
     ;
     ; The GPIO HAL is used for init and _turn_rx_on (main thread).
@@ -120,13 +120,13 @@ KERNAL_UART_W65C51N_S = 1
     ; using when the IRQ fires.
     ;
     ; The VIA port and pin are configurable via config.inc
-    ; (UART_CTS_PORT, UART_CTS_PIN).
+    ; (UART_RTS_PORT, UART_RTS_PIN).
     ; Avoid sharing a port with a busy driver (e.g. LCD data bus).
     ; -----------------------------------------------------------------
 
-    CTS_PORT     = ::UART_CTS_PORT
-    CTS_PIN      = ::UART_CTS_PIN
-    CTS_PORT_REG = IO::PORTB_REGISTER + ::UART_CTS_PORT
+    RTS_PORT     = ::UART_RTS_PORT
+    RTS_PIN      = ::UART_RTS_PIN
+    RTS_PORT_REG = IO::PORTB_REGISTER + ::UART_RTS_PORT
 
     ; CMD register value: TIC2 (transmitter on, no TX IRQs).
     ; TX interrupts are broken on the W65C51N, so TIC2 is the only
@@ -147,9 +147,9 @@ KERNAL_UART_W65C51N_S = 1
         lda STATUS_REGISTER
         sta status
 
-        ; Configure the CTS GPIO pin as output, active LOW (= send).
-        set_byte GPIO::port, #CTS_PORT
-        set_byte GPIO::mask, #CTS_PIN
+        ; Configure the RTS GPIO pin as output, active LOW (= send).
+        set_byte GPIO::port, #RTS_PORT
+        set_byte GPIO::mask, #RTS_PIN
         jsr GPIO::set_outputs
         jsr GPIO::turn_off
 
@@ -271,12 +271,12 @@ KERNAL_UART_W65C51N_S = 1
         cmp #$d0
         bcc @done            ; No, no need to change rx_off state.
 
-        ; The buffer is almost full. Assert CTS HIGH to tell remote to stop.
+        ; The buffer is almost full. Assert RTS HIGH to tell remote to stop.
         lda #1
         sta rx_off
-        lda CTS_PORT_REG
-        ora #CTS_PIN
-        sta CTS_PORT_REG
+        lda RTS_PORT_REG
+        ora #RTS_PIN
+        sta RTS_PORT_REG
 
     @done:
         rts
@@ -290,16 +290,16 @@ KERNAL_UART_W65C51N_S = 1
         cmp #$50
         bcs @done            ; No, no need to change rx_off state.
 
-        ; The buffer is emptying. Assert CTS LOW to tell remote to send.
-        ; SEI protects the full rx_off + CTS update, so the IRQ handler
-        ; cannot re-assert CTS HIGH between clearing rx_off and the
+        ; The buffer is emptying. Assert RTS LOW to tell remote to send.
+        ; SEI protects the full rx_off + RTS update, so the IRQ handler
+        ; cannot re-assert RTS HIGH between clearing rx_off and the
         ; port register write.
         sei
         lda #0
         sta rx_off
-        lda CTS_PORT_REG
-        and #($FF ^ CTS_PIN)
-        sta CTS_PORT_REG
+        lda RTS_PORT_REG
+        and #($FF ^ RTS_PIN)
+        sta RTS_PORT_REG
         cli
 
     @done:

@@ -16,7 +16,7 @@
 ; - Write buffer: circular 256-byte buffer for outgoing bytes. The
 ;   application queues bytes without waiting; the IRQ handler transmits
 ;   them one by one as the ACIA becomes ready (TXEMPTY).
-; - Flow control: CTS signalling via a VIA GPIO pin, to tell the remote
+; - Flow control: RTS signalling via a VIA GPIO pin, to tell the remote
 ;   side to stop sending when the read buffer is filling up.
 ;
 ; TX buffer and TIC mode switching:
@@ -35,7 +35,7 @@
 ; transmitter, deadlocking any write. DTROFF disables the receiver and
 ; IRQs, which can cause lost bytes. Using a plain VIA GPIO pin avoids
 ; both problems: the 6551 receiver stays always on, and we have direct,
-; side-effect-free control over the CTS line.
+; side-effect-free control over the RTS line.
 ;
 ; Note:
 ; Only inbound flow control is implemented (we tell the remote to stop).
@@ -73,7 +73,7 @@
 ;
 ;     I/O *)
 ;    ┌──────────┐
-;    │ GPIO PIN │───► RS232 CTS (pin acts as RTS pin, active low, 1 = stop flow)
+;    │ GPIO PIN │───► RS232 RTS (directly drives remote CTS, active low, 1 = stop)
 ;    └──────────┘
 ;
 ; See the notes from `um6551_poll.s` for some important pointers about the
@@ -81,8 +81,8 @@
 ;
 ; *) Differences in wiring, compared to the `um6551_poll.s` implementation:
 ; - IRQB is connected to the IRQB pin on the CPU.
-; - A VIA GPIO pin (default: PA7) drives the RS232 CTS line for flow
-;   control. Configurable via UART_CTS_PORT/UART_CTS_PIN in config.inc.
+; - A VIA GPIO pin (default: PA7) drives the RS232 RTS line for flow
+;   control. Configurable via UART_RTS_PORT/UART_RTS_PIN in config.inc.
 ;
 ; About the IRQB connection:
 ; - Be sure to add a pull-up resistor to IRQB on the CPU. The IRQB pin on
@@ -128,11 +128,11 @@ KERNAL_UART_UM6551_S = 1
     byte = UART::byte
 
     ; -----------------------------------------------------------------
-    ; Hardware flow control CTS pin.
+    ; Hardware flow control RTS pin.
     ;
-    ; Flow control is driven via a VIA GPIO pin (instead of the 6551's
+    ; Flow control is driven via a VIA GPIO pin (instead of the ACIA's
     ; DTR or RTS pins, which have side effects that make them unusable
-    ; for clean flow control). The pin directly drives the RS232 CTS
+    ; for clean flow control). The pin directly drives the RS232 RTS
     ; line: HIGH = stop sending, LOW = send.
     ;
     ; The GPIO HAL is used for init and _turn_rx_on (main thread).
@@ -141,13 +141,13 @@ KERNAL_UART_UM6551_S = 1
     ; using when the IRQ fires.
     ;
     ; The VIA port and pin are configurable via config.inc
-    ; (UART_CTS_PORT, UART_CTS_PIN).
+    ; (UART_RTS_PORT, UART_RTS_PIN).
     ; Avoid sharing a port with a busy driver (e.g. LCD data bus).
     ; -----------------------------------------------------------------
 
-    CTS_PORT     = ::UART_CTS_PORT
-    CTS_PIN      = ::UART_CTS_PIN
-    CTS_PORT_REG = IO::PORTB_REGISTER + ::UART_CTS_PORT
+    RTS_PORT     = ::UART_RTS_PORT
+    RTS_PIN      = ::UART_RTS_PIN
+    RTS_PORT_REG = IO::PORTB_REGISTER + ::UART_RTS_PORT
 
     ; Combined CMD register values for TIC mode switching.
     ; All base flags (parity, echo, DTR, IRQ) are baked in, so
@@ -173,16 +173,16 @@ KERNAL_UART_UM6551_S = 1
         lda STATUS_REGISTER
         sta status
 
-        ; Configure the CTS GPIO pin as output, active LOW (= send).
-        set_byte GPIO::port, #CTS_PORT
-        set_byte GPIO::mask, #CTS_PIN
+        ; Configure the RTS GPIO pin as output, active LOW (= send).
+        set_byte GPIO::port, #RTS_PORT
+        set_byte GPIO::mask, #RTS_PIN
         jsr GPIO::set_outputs
         jsr GPIO::turn_off
 
         ; Configure the ACIA before enabling IRQs, to avoid spurious
         ; interrupts from bytes that arrived during/before reset.
         ; The receiver is always on (DTRON). Flow control is handled
-        ; externally via the CTS GPIO pin.
+        ; externally via the RTS GPIO pin.
         set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
         set_byte CMD_REGISTER, #CMD_TX_IDLE
 
@@ -357,7 +357,7 @@ KERNAL_UART_UM6551_S = 1
 
     .proc _turn_rx_off_if_buffer_almost_full
         ; Check if the buffer is almost full. If it is, signal the remote side
-        ; (via RS232 CTS) to stop sending data.
+        ; (via RS232 RTS) to stop sending data.
 
         lda rx_off           ; RX turned off already? (0 = no, 1 = yes).
         bne @done            ; Yes, no need to check pending buffer size.
@@ -366,12 +366,12 @@ KERNAL_UART_UM6551_S = 1
         cmp #$d0
         bcc @done            ; No, no need to change rx_off state.
 
-        ; The buffer is almost full. Assert CTS HIGH to tell remote to stop.
+        ; The buffer is almost full. Assert RTS HIGH to tell remote to stop.
         lda #1
         sta rx_off
-        lda CTS_PORT_REG
-        ora #CTS_PIN
-        sta CTS_PORT_REG
+        lda RTS_PORT_REG
+        ora #RTS_PIN
+        sta RTS_PORT_REG
 
     @done:
         rts  
@@ -379,7 +379,7 @@ KERNAL_UART_UM6551_S = 1
 
     .proc _turn_rx_on_if_buffer_emptying
         ; Check if the buffer is emptying. If it is, signal the remote side
-        ; (via RS232 CTS) to start sending data.
+        ; (via RS232 RTS) to start sending data.
 
         lda rx_off           ; RX turned off? (0 = no, 1 = yes).
         beq @done            ; No, no need to check pending buffer size.
@@ -388,16 +388,16 @@ KERNAL_UART_UM6551_S = 1
         cmp #$50
         bcs @done            ; No, no need to change rx_off state.
 
-        ; The buffer is emptying. Assert CTS LOW to tell remote to send.
-        ; SEI protects the full rx_off + CTS update, so the IRQ handler
-        ; cannot re-assert CTS HIGH between clearing rx_off and the
+        ; The buffer is emptying. Assert RTS LOW to tell remote to send.
+        ; SEI protects the full rx_off + RTS update, so the IRQ handler
+        ; cannot re-assert RTS HIGH between clearing rx_off and the
         ; port register write.
         sei
         lda #0
         sta rx_off
-        lda CTS_PORT_REG
-        and #($FF ^ CTS_PIN)
-        sta CTS_PORT_REG
+        lda RTS_PORT_REG
+        and #($FF ^ RTS_PIN)
+        sta RTS_PORT_REG
         cli
     
     @done:

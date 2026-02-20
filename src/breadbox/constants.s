@@ -29,6 +29,8 @@ HD44780_4BIT = 3      ; HD44780 LCD, 4-bit data bus
 ; UART
 UM6551       = 4      ; UM6551 ACIA, IRQ-driven with buffering and flow control
 UM6551_POLL  = 5      ; UM6551 ACIA, simple RXFULL/TXEMPTY polling
+W65C51N      = 6      ; W65C51N ACIA, IRQ-driven RX with buffering and flow control
+W65C51N_POLL = 7      ; W65C51N ACIA, simple polling (TX uses timed delay)
 
 ; --- Booleans ------------------------------------------------------
 
@@ -50,6 +52,13 @@ P4 = %00010000
 P5 = %00100000
 P6 = %01000000
 P7 = %10000000
+
+; --- CPU clock -------------------------------------------------------
+
+CLK1MHZ    = 1        ; 1 MHz (default for breadboard builds)
+CLK2MHZ    = 2        ; 2 MHz
+CLK4MHZ    = 4        ; 4 MHz
+CLK8MHZ    = 8        ; 8 MHz
 
 ; --- Baud rates -----------------------------------------------------
 

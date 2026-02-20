@@ -28,6 +28,10 @@ KERNAL_UART_S = 1
         .include "breadbox/uart/um6551.s"
     .elseif ::UART_DRIVER = ::UM6551_POLL
         .include "breadbox/uart/um6551_poll.s"
+    .elseif ::UART_DRIVER = ::W65C51N
+        .include "breadbox/uart/w65c51n.s"
+    .elseif ::UART_DRIVER = ::W65C51N_POLL
+        .include "breadbox/uart/w65c51n_poll.s"
     .endif
 
 .segment "ZEROPAGE"

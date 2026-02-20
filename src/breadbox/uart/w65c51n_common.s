@@ -100,25 +100,17 @@ B19200     = %00001111       ; Baud rate 19200
 ; Configuration
 ; -----------------------------------------------------------------
 
-.ifndef ::CPU_CLOCK
-    ::CPU_CLOCK = ::CLK1MHZ
-.endif
-
-.ifndef ::UART_BAUD_RATE
-    ::UART_BAUD_RATE = ::BAUD19200
-.endif
-
-.if ::UART_BAUD_RATE = ::BAUD1200
+.if ::UART_BAUD_RATE = 1200
     USE_BAUD_RATE = B1200
-.elseif ::UART_BAUD_RATE = ::BAUD2400
+.elseif ::UART_BAUD_RATE = 2400
     ::USE_BAUD_RATE = B2400
-.elseif ::UART_BAUD_RATE = ::BAUD4800
+.elseif ::UART_BAUD_RATE = 4800
     ::USE_BAUD_RATE = B4800
-.elseif ::UART_BAUD_RATE = ::BAUD7200
+.elseif ::UART_BAUD_RATE = 7200
     ::USE_BAUD_RATE = B7200
-.elseif ::UART_BAUD_RATE = ::BAUD9600
+.elseif ::UART_BAUD_RATE = 9600
     ::USE_BAUD_RATE = B9600
-.elseif ::UART_BAUD_RATE = ::BAUD19200
+.elseif ::UART_BAUD_RATE = 19200
     ::USE_BAUD_RATE = B19200
 .else
     .error "UART_BAUD_RATE invalid for W65C51N ACIA"
@@ -135,7 +127,7 @@ B19200     = %00001111       ; Baud rate 19200
 ; (low baud rates or fast clocks), a nested X/Y loop is used.
 ; -----------------------------------------------------------------
 
-CHAR_CYCLES = (10 * ::CPU_CLOCK * 1000000) / ::UART_BAUD_RATE
+CHAR_CYCLES = (10 * ::CPU_CLOCK) / ::UART_BAUD_RATE
 TX_DELAY_ITERATIONS = CHAR_CYCLES / 5
 
 ; -----------------------------------------------------------------

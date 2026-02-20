@@ -8,10 +8,11 @@
 ; CPU clock speed
 ;
 ; Used by drivers that need cycle-accurate timing (e.g. the W65C51N
-; transmit delay). If not set, defaults to 1 MHz.
+; transmit delay). The MHZ constant (10^6) can be used to specify
+; other clock speeds, for example by using "4 * MHZ".
 ; --------------------------------------------------------------------
 
-CPU_CLOCK = CLK1MHZ
+CPU_CLOCK = 1 * MHZ
 
 ; --------------------------------------------------------------------
 ; WozMon
@@ -42,17 +43,14 @@ IO_ADDRESS = $6000
 INCLUDE_UART = YES
 
 ; Available drivers:
-;   UM6551       - UM6551/R6551/SY6551 ACIA, IRQ-driven RX/TX buffers
-;   UM6551_POLL  - UM6551, simple polling (no IRQ, no buffers)
 ;   W65C51N      - WDC W65C51N ACIA, IRQ-driven RX buffer, timed TX
 ;   W65C51N_POLL - WDC W65C51N, simple polling, timed TX
+;   UM6551       - UM6551/R6551/SY6551 ACIA, IRQ-driven RX/TX buffers
+;   UM6551_POLL  - UM6551, simple polling (no IRQ, no buffers)
 ;
-; The W65C51N has a hardware bug: TXEMPTY in the status register is
-; permanently stuck high, and TX interrupts never fire. The W65C51N
-; drivers work around this with a software delay after each byte.
-UART_DRIVER    = UM6551
+UART_DRIVER    = W65C51N
 UART_ADDRESS   = $5000
-UART_BAUD_RATE = BAUD19200
+UART_BAUD_RATE = 19200
 
 ; Hardware flow control CTS pin (UM6551 and W65C51N drivers only).
 ;

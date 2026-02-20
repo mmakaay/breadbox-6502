@@ -98,17 +98,17 @@ B19200     = %00001111       ; Baud rate 19200
     ::UART_BAUD_RATE = ::BAUD19200
 .endif
 
-.if ::UART_BAUD_RATE = ::BAUD1200
+.if ::UART_BAUD_RATE = 1200
     USE_BAUD_RATE = B1200
-.elseif ::UART_BAUD_RATE = ::BAUD2400
+.elseif ::UART_BAUD_RATE = 2400
     ::USE_BAUD_RATE = B2400
-.elseif ::UART_BAUD_RATE = ::BAUD4800
+.elseif ::UART_BAUD_RATE = 4800
     ::USE_BAUD_RATE = B4800
-.elseif ::UART_BAUD_RATE = ::BAUD7200
+.elseif ::UART_BAUD_RATE = 7200
     ::USE_BAUD_RATE = B7200
-.elseif ::UART_BAUD_RATE = ::BAUD9600
+.elseif ::UART_BAUD_RATE = 9600
     ::USE_BAUD_RATE = B9600
-.elseif ::UART_BAUD_RATE = ::BAUD19200
+.elseif ::UART_BAUD_RATE = 19200
     ::USE_BAUD_RATE = B19200
 .else
     .error "UART_BAUD_RATE invalid for UM6551 ACIA"

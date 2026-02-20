@@ -9,52 +9,68 @@
 ; This can be used to check if the serial communication is working correctly.
 ; ----------------------------------------------------------------------------
 
+; Uncomment to disable LCD debug output support.
+;ENABLE_LCD = 1
+
 .include "breadbox/kernal.s"
 
+.ifdef ENABLE_LCD
 .segment "ZEROPAGE"
 
-    cursor: .res 1  ; Current position on LCD line 1 (0-15)
+    cursor: .res 1
+.endif
 
 .segment "CODE"
 
+.ifdef ENABLE_LCD
     hello: .asciiz "Serial test"
+.endif
 
     .proc main
+.ifdef ENABLE_LCD
         jsr display_welcome_message
         lda #16  ; Cursor to end of line, so first byte read clears LCD line 1
         sta cursor
+.endif
 
     @loop:
+.ifdef ENABLE_LCD
         ; Show UART status register.
         jsr show_status
+.endif
 
-        ; Loop, until we see a byte in the receive buffer.
-        jsr UART::check_rx
-        lda UART::byte
-        beq @loop
+        ; Loop, until we read a byte from the receive buffer.
+        jsr UART::read
+        bcc @loop
 
+.ifdef ENABLE_LCD
         ; Wrap if cursor is at end of LCD line 1.
         lda cursor
         cmp #16
         bne @read
         jsr clear_line1
+.endif
 
     @read:
-        ; Read the incoming byte.
-        jsr UART::read
-
+.ifdef ENABLE_LCD
         ; Position cursor, then display received byte on LCD line 1.
         jsr set_cursor_line1
+.endif
         lda UART::byte
+
+.ifdef ENABLE_LCD
         sta LCD::byte
         jsr LCD::write
         inc cursor
+.endif
 
         ; Echo byte back via UART transmitter.
         jsr UART::write_terminal
 
         jmp @loop
     .endproc
+
+.ifdef ENABLE_LCD
 
     ; Show the UART status register bits on LCD line 2.
     .proc show_status
@@ -131,4 +147,8 @@
     @done:
         rts
     .endproc
+
+.endif
+
+
 

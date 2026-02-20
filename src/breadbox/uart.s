@@ -47,32 +47,36 @@ KERNAL_UART_S = 1
         ;   A, X, Y preserved
 
     check_rx = DRIVER::check_rx
-        ; Check if there is a byte in the receiver buffer.
+        ; Check the number of bytes pending in the receive buffer.
         ;
         ; Out:
-        ;   UART::byte = non-zero if data available, zero if not
+        ;   UART::byte = number of pending bytes (0 = empty)
         ;   A, X, Y preserved
 
     _read = DRIVER::read
-        ; Read a byte from the receiver (no wait).
+        ; Read a byte from the receive buffer (no wait).
         ;
         ; Out:
-        ;   UART::byte = received byte
+        ;   UART::byte = received byte (if carry set)
+        ;   Carry set   = byte was read
+        ;   Carry clear = buffer empty, no byte read
         ;   A, X, Y preserved
 
     check_tx = DRIVER::check_tx
-        ; Check if a byte can be sent to the transmitter.
+        ; Check if the transmit buffer has space.
         ;
         ; Out:
-        ;   UART::byte = non-zero if ready, zero if busy
+        ;   UART::byte = non-zero if space available, zero if full
         ;   A, X, Y preserved
 
     _write = DRIVER::write
-        ; Write a byte to the transmitter (no wait).
+        ; Queue a byte into the transmit buffer (no wait).
         ;
         ; In (zero page):
         ;   UART::byte = byte to write
         ; Out:
+        ;   Carry clear = byte queued successfully
+        ;   Carry set   = buffer full, byte not written
         ;   A, X, Y preserved
 
     load_status = DRIVER::load_status
@@ -104,7 +108,7 @@ KERNAL_UART_S = 1
     .endproc
 
     .proc write
-        ; Wait for transmitter to be ready, then write a byte.
+        ; Wait for space in the transmit buffer, then queue a byte.
         ;
         ; In (zero page):
         ;   UART::byte = byte to write
@@ -142,7 +146,8 @@ KERNAL_UART_S = 1
         ; When sending a carriage return (CR, \r), follow up with a line feed (LF, \n)
         ; to move the cursor to the next line rather than just the start of the current
         ; one. While terminal applications can often handle this via a CR→CRNL setting,
-        ; doing it in code ensures correct behaviour regardless of terminal configuration.        lda byte
+        ; doing it in code ensures correct behaviour regardless of terminal configuration.
+        lda byte
         cmp #$0d              ; Is it CR?
         bne @raw
         jsr write             ; Yes, send CR first

@@ -8,13 +8,25 @@
 ; This implementation uses various techniques to make the serial connection
 ; rock solid:
 ;
-; - IRQ triggering: to not requiring polling for checking when bytes can
-;   be read from the RX buffer, and to make the TX polling possible without
-;   having to actively read the STATUS register.
-; - Read buffer: to temporarily store incoming bytes when they arrive
-;   faster than the computer can process them.
+; - IRQ-driven RX and TX: incoming bytes are buffered by the IRQ handler,
+;   and outgoing bytes are drained from the write buffer by the IRQ
+;   handler when the transmitter is ready. No polling required.
+; - Read buffer: circular 256-byte buffer for incoming bytes, so data is
+;   not lost when bytes arrive faster than the application processes them.
+; - Write buffer: circular 256-byte buffer for outgoing bytes. The
+;   application queues bytes without waiting; the IRQ handler transmits
+;   them one by one as the ACIA becomes ready (TXEMPTY).
 ; - Flow control: CTS signalling via a VIA GPIO pin, to tell the remote
 ;   side to stop sending when the read buffer is filling up.
+;
+; TX buffer and TIC mode switching:
+;
+; The transmitter interrupt control (TIC) mode is switched between TIC2
+; (TX IRQs off, idle) and TIC1 (TX IRQs on, transmitting). When the
+; write buffer is empty, TIC2 prevents spurious TXEMPTY interrupts. When
+; the application queues the first byte, the driver switches to TIC1,
+; which immediately fires a TXEMPTY IRQ to start draining. The handler
+; switches back to TIC2 when the buffer is empty.
 ;
 ; About the flow control approach:
 ;
@@ -27,9 +39,9 @@
 ;
 ; Note:
 ; Only inbound flow control is implemented (we tell the remote to stop).
-; Outbound flow control (remote tells us to stop) is not needed: the
-; connecting systems are normally many magnitudes faster than our trusty
-; 6502, so they will not choke on our data output rate.
+; Outbound flow control (remote tells us to stop) is not yet implemented,
+; but the write buffer makes it possible: the remote could signal us to
+; pause, and we would simply stop draining the TX buffer until cleared.
 ;
 ; Wiring diagram
 ; --------------
@@ -129,13 +141,19 @@ KERNAL_UART_UM6551_S = 1
     ; using when the IRQ fires.
     ;
     ; The VIA port and pin are configurable via config.inc
-    ; (UART_CTS_PORT, UART_CTS_PIN). Defaults: port A, pin 7.
+    ; (UART_CTS_PORT, UART_CTS_PIN).
     ; Avoid sharing a port with a busy driver (e.g. LCD data bus).
     ; -----------------------------------------------------------------
 
     CTS_PORT     = ::UART_CTS_PORT
     CTS_PIN      = ::UART_CTS_PIN
     CTS_PORT_REG = IO::PORTB_REGISTER + ::UART_CTS_PORT
+
+    ; Combined CMD register values for TIC mode switching.
+    ; All base flags (parity, echo, DTR, IRQ) are baked in, so
+    ; switching modes is a single register write.
+    CMD_TIC1     = PAROFF | ECHOOFF | TIC1 | DTRON | IRQON
+    CMD_TIC2     = PAROFF | ECHOOFF | TIC2 | DTRON | IRQON
 
     .proc init
         push_axy
@@ -148,6 +166,10 @@ KERNAL_UART_UM6551_S = 1
         sta rx_w_ptr
         sta rx_pending
         sta rx_off
+        sta tx_r_ptr
+        sta tx_w_ptr
+        sta tx_pending
+        sta tx_off
         lda STATUS_REGISTER
         sta status
 
@@ -162,7 +184,7 @@ KERNAL_UART_UM6551_S = 1
         ; The receiver is always on (DTRON). Flow control is handled
         ; externally via the CTS GPIO pin.
         set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
-        set_byte CMD_REGISTER, #(PAROFF | ECHOOFF | TIC1 | DTRON | IRQON)
+        set_byte CMD_REGISTER, #CMD_TIC2
 
         ; Now install the IRQ handler and enable interrupts.
         cp_address ::VECTORS::irq_vector, _irq_handler
@@ -193,15 +215,11 @@ KERNAL_UART_UM6551_S = 1
         txa
         pha
 
-        ; Make sure a byte is available. The caller should have checked using
-        ; the check_rx routine, but if that was not done, then we don't actually
-        ; read from the buffer, and use the carry bit to indicate that no byte
-        ; was read (carry = 0). This can also be used by callers to know if an
-        ; actual read was done.
+        ; Check if we can read a byte from the input buffer.
+        ; The carry flag is used for communicating if a byte could be read.
         clc            ; carry 0 = flag "no byte was read"
         lda rx_pending ; Check if there are any pending bytes.
         beq @done      ; No, we're done, leaving carry = 0.
-        sec            ; carry 1 = flat "byte was read"
 
         ; Read the next character from the input buffer.
         ldx rx_r_ptr
@@ -213,6 +231,7 @@ KERNAL_UART_UM6551_S = 1
         dec rx_pending
 
         jsr _turn_rx_on_if_buffer_emptying
+        sec            ; carry 1 = flag "byte was read"
     
     @done:
         pla
@@ -223,8 +242,8 @@ KERNAL_UART_UM6551_S = 1
 
     .proc check_tx
         pha
-        lda status
-        and #TXEMPTY
+        lda tx_pending
+        eor #$FF            ; 255 (full) → 0, anything else → non-zero
         sta byte
         pla
         rts
@@ -232,12 +251,50 @@ KERNAL_UART_UM6551_S = 1
 
     .proc write
         pha
-        lda byte              ; Load byte from `byte` argument.
-        sta DATA_REGISTER     ; Write it to the transmitter.
-        lda status            ; Clear TXEMPTY in shadow, so check_tx
-        and #($FF ^ TXEMPTY)  ; waits for the next TX-complete IRQ
-        sta status            ; before reporting ready again.
+        txa
+        pha
+
+        ; Disable interrupts for the critical section: checking
+        ; the buffer, writing to it, and deciding on kickstart
+        ; must be atomic w.r.t. the IRQ handler draining the buffer.
+        sei
+
+        ; Check if the buffer is full.
+        lda tx_pending
+        cmp #$FF
+        beq @full
+
+        ; Queue the byte into the transmit buffer.
+        lda byte
+        ldx tx_w_ptr
+        sta tx_buffer,X
+        inc tx_w_ptr
+        inc tx_pending
+
+        ; If this is the first byte in the buffer, enable TX
+        ; interrupts to kickstart the transmit chain. The ACIA
+        ; will fire an IRQ immediately after CLI (TXEMPTY is
+        ; already set), and the handler will drain the byte.
+        lda tx_pending
+        cmp #1
+        bne @done
+
+        set_byte CMD_REGISTER, #CMD_TIC1
+
+    @done:
+        cli
         pla
+        tax
+        pla
+        clc                   ; Success: byte queued
+        rts
+
+    @full:
+        cli
+        pla
+        tax
+        pla
+        sec                   ; Error: buffer full
         rts
     .endproc
 
@@ -250,19 +307,46 @@ KERNAL_UART_UM6551_S = 1
         txa
         pha
 
-        lda STATUS_REGISTER  ; Acknowledge the IRQ by reading from STATUS.
-        sta status
+        lda STATUS_REGISTER  ; Acknowledge the IRQ by reading STATUS.
+        sta status           ; Update shadow for public API.
+
+        ; --- RX: read incoming byte if available ---
 
         and #RXFULL          ; Does the status indicate we can read a byte?
-        beq @done            ; No, we're done here.
+        beq @check_tx        ; No, skip to TX handling.
 
         lda DATA_REGISTER    ; Load the byte from the UART DATA register.
-        ldx rx_w_ptr        ; Store the byte in the input buffer.
+        ldx rx_w_ptr         ; Store the byte in the input buffer.
         sta rx_buffer,X
-        inc rx_w_ptr        ; Update counters.
+        inc rx_w_ptr         ; Update counters.
         inc rx_pending
 
         jsr _turn_rx_off_if_buffer_almost_full
+
+        ; --- TX: send next byte from buffer if transmitter ready ---
+
+    @check_tx:
+        lda status           ; Reload (A was clobbered by RX path).
+        and #TXEMPTY         ; Is the transmitter ready?
+        beq @done            ; No, nothing to do.
+
+        lda tx_pending       ; Any bytes waiting to be sent?
+        beq @tx_stop         ; No, disable TX IRQs.
+
+        ; Send the next byte from the transmit buffer.
+        ldx tx_r_ptr
+        lda tx_buffer,X
+        sta DATA_REGISTER
+        inc tx_r_ptr
+        dec tx_pending
+
+        lda tx_pending       ; Buffer now empty?
+        bne @done            ; No, keep TIC1 for the next TXEMPTY.
+
+    @tx_stop:
+        ; Buffer empty (or was already empty). Switch to TIC2
+        ; to stop TXEMPTY from triggering further IRQs.
+        set_byte CMD_REGISTER, #CMD_TIC2
 
     @done:
         pla
@@ -305,11 +389,16 @@ KERNAL_UART_UM6551_S = 1
         bcs @done            ; No, no need to change rx_off state.
 
         ; The buffer is emptying. Assert CTS LOW to tell remote to send.
+        ; SEI protects the full rx_off + CTS update, so the IRQ handler
+        ; cannot re-assert CTS HIGH between clearing rx_off and the
+        ; port register write.
+        sei
         lda #0
         sta rx_off
-        set_byte GPIO::port, #CTS_PORT
-        set_byte GPIO::mask, #CTS_PIN
-        jsr GPIO::turn_off
+        lda CTS_PORT_REG
+        and #($FF ^ CTS_PIN)
+        sta CTS_PORT_REG
+        cli
     
     @done:
         rts
@@ -318,4 +407,3 @@ KERNAL_UART_UM6551_S = 1
 .endscope
 
 .endif
-

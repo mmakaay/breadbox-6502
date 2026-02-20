@@ -152,8 +152,8 @@ KERNAL_UART_UM6551_S = 1
     ; Combined CMD register values for TIC mode switching.
     ; All base flags (parity, echo, DTR, IRQ) are baked in, so
     ; switching modes is a single register write.
-    CMD_TIC1     = PAROFF | ECHOOFF | TIC1 | DTRON | IRQON
-    CMD_TIC2     = PAROFF | ECHOOFF | TIC2 | DTRON | IRQON
+    CMD_TX_ACTIVE = PAROFF | ECHOOFF | TIC1 | DTRON | IRQON
+    CMD_TX_IDLE   = PAROFF | ECHOOFF | TIC2 | DTRON | IRQON
 
     .proc init
         push_axy
@@ -184,7 +184,7 @@ KERNAL_UART_UM6551_S = 1
         ; The receiver is always on (DTRON). Flow control is handled
         ; externally via the CTS GPIO pin.
         set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
-        set_byte CMD_REGISTER, #CMD_TIC2
+        set_byte CMD_REGISTER, #CMD_TX_IDLE
 
         ; Now install the IRQ handler and enable interrupts.
         cp_address ::VECTORS::irq_vector, _irq_handler
@@ -217,9 +217,9 @@ KERNAL_UART_UM6551_S = 1
 
         ; Check if we can read a byte from the input buffer.
         ; The carry flag is used for communicating if a byte could be read.
-        clc            ; carry 0 = flag "no byte was read"
-        lda rx_pending ; Check if there are any pending bytes.
-        beq @done      ; No, we're done, leaving carry = 0.
+        clc                  ; carry 0 = flag "no byte was read"
+        lda rx_pending       ; Check if there are any pending bytes.
+        beq @done            ; No, we're done, leaving carry = 0.
 
         ; Read the next character from the input buffer.
         ldx rx_r_ptr
@@ -231,7 +231,7 @@ KERNAL_UART_UM6551_S = 1
         dec rx_pending
 
         jsr _turn_rx_on_if_buffer_emptying
-        sec            ; carry 1 = flag "byte was read"
+        sec                  ; carry 1 = flag "byte was read"
     
     @done:
         pla
@@ -243,7 +243,7 @@ KERNAL_UART_UM6551_S = 1
     .proc check_tx
         pha
         lda tx_pending
-        eor #$FF            ; 255 (full) → 0, anything else → non-zero
+        eor #$FF             ; 255 (full) → 0, anything else → non-zero
         sta byte
         pla
         rts
@@ -256,7 +256,8 @@ KERNAL_UART_UM6551_S = 1
 
         ; Disable interrupts for the critical section: checking
         ; the buffer, writing to it, and deciding on kickstart
-        ; must be atomic w.r.t. the IRQ handler draining the buffer.
+        ; must be atomic with respect to the IRQ handler draining
+        ; the buffer.
         sei
 
         ; Check if the buffer is full.
@@ -278,8 +279,7 @@ KERNAL_UART_UM6551_S = 1
         lda tx_pending
         cmp #1
         bne @done
-
-        set_byte CMD_REGISTER, #CMD_TIC1
+        set_byte CMD_REGISTER, #CMD_TX_ACTIVE
 
     @done:
         cli
@@ -346,7 +346,7 @@ KERNAL_UART_UM6551_S = 1
     @tx_stop:
         ; Buffer empty (or was already empty). Switch to TIC2
         ; to stop TXEMPTY from triggering further IRQs.
-        set_byte CMD_REGISTER, #CMD_TIC2
+        set_byte CMD_REGISTER, #CMD_TX_IDLE
 
     @done:
         pla

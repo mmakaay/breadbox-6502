@@ -11,6 +11,7 @@ CP_WORD_S = 1
     ;   target = value copied from source
     ;   source = preserved
     ;   A = clobbered
+    
     lda     source
     sta     target
     lda     source + 1

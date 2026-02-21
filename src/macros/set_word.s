@@ -13,7 +13,8 @@ STORE16_S = 1
     ; Out:
     ;   target = value of low byte
     ;   target + 1 = value of high byte
-    ;   A = clobberede7
+    ;   A = clobbered
+    
     SET_BYTE target, lo
     SET_BYTE target + 1, hi
 .endmacro

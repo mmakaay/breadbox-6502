@@ -85,4 +85,10 @@ KERNAL_S = 1
 ; Make sure that code without segment after including this uses CODE.
 .segment "CODE"
 
+.macro HALT
+    ; Halt program execution.
+
+    jmp KERNAL::halt
+.endmacro
+
 .endif

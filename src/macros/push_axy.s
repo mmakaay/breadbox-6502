@@ -3,6 +3,7 @@ PUSH_AXY_S = 1
 
 .macro PUSH_AXY
     ; Push A, X and Y onto the stack.
+    
     pha
     txa
     pha

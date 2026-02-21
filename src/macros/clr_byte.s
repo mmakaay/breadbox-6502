@@ -11,6 +11,7 @@ CLEAR8_S = 1
     ; Out:
     ;   target = #0
     ;   A = clobbered
+    
     SET_BYTE target, #00
 .endmacro
 

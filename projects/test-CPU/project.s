@@ -32,13 +32,9 @@
         beq @is_65c02
 
     @is_6502:
-        CP_ADDRESS PRINT::string, msg_6502
-        jmp @print
-
-    @is_65c02:
-        CP_ADDRESS PRINT::string, msg_65c02
-
-    @print:
-        jmp LCD::print
+        PRINT LCD, msg_6502
         jmp KERNAL::halt
 
+    @is_65c02:
+        PRINT LCD, msg_65c02
+        jmp KERNAL::halt

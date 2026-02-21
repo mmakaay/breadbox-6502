@@ -50,17 +50,16 @@ The mandatory example for any project:
 message: .asciiz "Hello, world!"
 
 main:
-    CP_ADDRESS PRINT::string, message  ; Line up the message for printing
-    jsr LCD::print                     ; Print message on the LCD display
-    jsr UART::print                    ; Print message on an RS232 terminal
-    jmp KERNAL::halt                   ; Stop progra execution
+    PRINT LCD, message     ; Print the greeting on the LCD display
+    HALT
 ```
 
-What you can see here is that hardware is abstracted by the KERNAL's LCD HAL
-layer, and that the code only has to worry about providing the required bytes
-to the LCD display.
+What you can see here is that hardware is abstracted by the KERNAL's HAL
+layers, and that the code only has to worry about providing the required bytes
+to the LCD display. The `PRINT` and `HALT` macros take care of the low-level
+code. Of course, it is still possible to roll your own assembly code for this.
 
-This code is also available as a project in `projects/hello-world`.
+See also `projects/hello-world`.
 
 ## Writing assembly code
 

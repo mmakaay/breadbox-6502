@@ -3,6 +3,10 @@
 ; This configuration matches the hardware setup as used in
 ; Ben Eater's tutorial video.
 
+CPU_CLOCK        = 1 * MHZ
+
+IO_ADDRESS       = $6000
+
 INCLUDE_LCD      = YES
 LCD_DRIVER       = HD44780_8BIT
 LCD_CMND_PORT    = PORTA         ; CMND pins connected to VIA port A

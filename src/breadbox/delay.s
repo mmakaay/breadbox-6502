@@ -37,40 +37,36 @@ KERNAL_DELAY_S = 1
 
 .endscope
 
-; -----------------------------------------------------------------
-; DELAY_US - compile-time microsecond delay
-;
-; Converts a compile-time constant (microseconds) into the matching
-; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
-;
-; In:
-;   us = delay duration in microseconds (compile-time constant)
-; Out:
-;   A = clobbered (by SET_WORD)
-;   X, Y preserved
-; -----------------------------------------------------------------
-
 .macro DELAY_US us
+    ; Compile-time microsecond delay.
+    ;
+    ; Converts a compile-time constant (microseconds) into the matching
+    ; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
+    ;
+    ; In:
+    ;   us = delay duration in microseconds (compile-time constant)
+    ; Out:
+    ;   A = clobbered (by SET_WORD)
+    ;   X, Y preserved
+    
     .local ITERATIONS
     ITERATIONS = (us * (::CPU_CLOCK / 1000000)) / 5
     SET_WORD DELAY::iterations, #<ITERATIONS, #>ITERATIONS
     jsr DELAY::wait
 .endmacro
 
-; -----------------------------------------------------------------
-; DELAY_MS - compile-time milisecond delay
-;
-; Converts a compile-time constant (miliseconds) into the matching
-; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
-;
-; In:
-;   ms = delay duration in miliseconds (compile-time constant)
-; Out:
-;   A = clobbered (by SET_WORD)
-;   X, Y preserved
-; -----------------------------------------------------------------
-
 .macro DELAY_MS ms
+    ; Compile-time milisecond delay.
+    ;
+    ; Converts a compile-time constant (miliseconds) into the matching
+    ; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
+    ;
+    ; In:
+    ;   ms = delay duration in miliseconds (compile-time constant)
+    ; Out:
+    ;   A = clobbered (by SET_WORD)
+    ;   X, Y preserved
+
     DELAY_US ms * 1000
 .endmacro
 

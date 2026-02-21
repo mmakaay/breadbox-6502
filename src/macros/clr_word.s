@@ -11,6 +11,7 @@ CLEAR16_S = 1
     ; Out:
     ;   target = #0000
     ;   A = clobbered
+    
     SET_WORD target, #00, #00
 .endmacro
 

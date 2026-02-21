@@ -17,6 +17,7 @@ CP_ADDRESS_S = 1
     ;   target = low byte of source address
     ;   target + 1 = high byte of source address
     ;   A = clobbered
+    
     SET_WORD target, #<source, #>source
 .endmacro
 

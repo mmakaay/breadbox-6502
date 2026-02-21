@@ -10,6 +10,7 @@ STORE8_S = 1
     ; Out:
     ;   target = value
     ;   A = clobbered
+    
     lda     value
     sta     target
 .endmacro

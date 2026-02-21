@@ -18,7 +18,16 @@ KERNAL_INC = 1
 
 ; Include general purpose macros, that make it easier to write some
 ; often used code fragments.
-.include "breadbox/macros/macros.inc"
+.include "breadbox/macros/clr_byte.inc"
+.include "breadbox/macros/clr_word.inc"
+.include "breadbox/macros/dec_word.inc"
+.include "breadbox/macros/cp_address.inc"
+.include "breadbox/macros/cp_word.inc"
+.include "breadbox/macros/inc_word.inc"
+.include "breadbox/macros/pull_axy.inc"
+.include "breadbox/macros/push_axy.inc"
+.include "breadbox/macros/set_byte.inc"
+.include "breadbox/macros/set_word.inc"
 
 ; Include global constants and the configuration file.
 .include "breadbox/core/constants.inc"
@@ -64,7 +73,6 @@ KERNAL_INC = 1
 ; Prevent build warnings when a segment is not used in a project.
 .segment "STACK"
 .segment "RAM"
-.segment "DATA"
 .segment "WOZMON"
 
 ; Make sure that code without segment after including this uses CODE.

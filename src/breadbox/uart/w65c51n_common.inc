@@ -7,7 +7,7 @@
 ; TIC1 transmit interrupt relies on the same flag, so it never fires
 ; either.
 ;
-; The _tx_delay procedure provides a software workaround: it uses
+; The _tx_delay subroutine provides a software workaround: it uses
 ; the DELAY module to wait one character time after every
 ; DATA_REGISTER write, ensuring the transmitter has finished
 ; before the next byte.
@@ -20,7 +20,7 @@ KERNAL_UART_W65C51N_COMMON_S = 1
 
 ; -----------------------------------------------------------------
 ; Shared 6551 register definitions, constants, baud rate mapping,
-; and _soft_reset procedure.
+; and _soft_reset subroutine.
 ; -----------------------------------------------------------------
 
 .segment "KERNAL"

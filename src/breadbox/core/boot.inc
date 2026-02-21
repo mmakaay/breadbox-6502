@@ -1,7 +1,7 @@
 ; -----------------------------------------------------------------
 ; Boot sequence and KERNAL entry points
 ;
-; Provides the boot routine (jumped to by reset vector) and the
+; Provides the boot subroutine (jumped to by reset vector) and the
 ; halt loop. The boot sequence initializes hardware in order and
 ; then jumps to `main`, which must be implemented by the
 ; application.

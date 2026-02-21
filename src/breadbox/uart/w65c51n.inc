@@ -15,7 +15,7 @@
 ; - Read buffer: circular 256-byte buffer for incoming bytes.
 ; - Timed TX: outgoing bytes are written directly to the DATA register,
 ;   followed by a calibrated delay for one character time. The write
-;   procedure blocks during this delay, but RX interrupts continue
+;   subroutine blocks during this delay, but RX interrupts continue
 ;   to be serviced (the delay does not disable interrupts).
 ; - Flow control: RTS signalling via a VIA GPIO pin, to tell the remote
 ;   side to stop sending when the read buffer is filling up.
@@ -148,7 +148,7 @@ KERNAL_UART_W65C51N_S = 1
 
     .proc check_tx
         ; Always report ready. There is no TX buffer; the write
-        ; procedure handles timing via a software delay.
+        ; subroutine handles timing via a software delay.
         pha
         lda #1
         sta byte

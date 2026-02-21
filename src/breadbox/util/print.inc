@@ -3,7 +3,7 @@
 ;
 ; Generic string printing with configurable output device.
 ;
-; The print procedure walks a null-terminated string via a
+; The print subroutine walks a null-terminated string via a
 ; 16-bit pointer, calling an output function for each byte. The
 ; output function is specified as a function pointer, allowing the
 ; same print logic to target any output device (LCD, UART, etc.).
@@ -81,8 +81,8 @@ KERNAL_PRINT_S = 1
 .macro PRINT device, string_address
     ; PRINT - print a null-terminated string on a given device.
     ;
-    ; The procedure `device::print` must exist, to handle the printing.
-    ; For example with `print LCD, str`, the procedure `LCD::print`
+    ; The subroutine `device::print` must exist, to handle the printing.
+    ; For example with `print LCD, str`, the subroutine `LCD::print`
     ; must exist.
     ;
     ; In:

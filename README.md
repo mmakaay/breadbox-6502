@@ -25,7 +25,7 @@ KERNAL:
 - Various hardware drivers
 - Hardware Abstraction Layer (HAL) - APIs to access hardware from your project
 - Boot sequence that initializes the system and hardware
-- Project-specific `main` routine, called by boot sequence after initialization
+- Project-specific `main` subroutine, called by boot sequence after initialization
 - IRQ jump vectors (for IRQ and NMI) can be changed dynamically
 - Macros for commonly repeated bits of code
 - A stdlib (standard library) with routines you can include in your project

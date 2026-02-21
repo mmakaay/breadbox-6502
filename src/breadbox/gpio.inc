@@ -18,10 +18,10 @@
 ; Parameters are passed via zero page variables:
 ;
 ;   GPIO::port  = port selector (GPIO::PORTA or GPIO::PORTB)
-;   GPIO::mask  = pin mask (meaning depends on procedure)
+;   GPIO::mask  = pin mask (meaning depends on subroutine)
 ;   GPIO::value = pin values / data byte
 ;
-; All procedures preserve A, X, Y.
+; All subroutines preserve A, X, Y.
 ; -----------------------------------------------------------------
 
 .ifndef KERNAL_GPIO_S
@@ -34,7 +34,7 @@ KERNAL_GPIO_S = 1
 .segment "ZEROPAGE"
 
     port:  .res 1              ; Port selector (GPIO::PORTA or GPIO::PORTB)
-    mask:  .res 1              ; Pin mask (meaning depends on procedure)
+    mask:  .res 1              ; Pin mask (meaning depends on subroutine)
     value: .res 1              ; Pin values / data byte
     temp:  .res 1              ; In-subroutine temporary storage
 

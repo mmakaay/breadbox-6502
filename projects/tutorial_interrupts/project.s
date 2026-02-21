@@ -5,8 +5,8 @@
 ; Result   : https://www.youtube.com/watch?v=oOYA-jsWTmc&t=1276
 ;
 ; I implemented the debounce countdown different from how Ben did it in
-; the video. I moved the debounce countdown outside the interrupt routine,
-; but have it set and checked from inside the interrupt routine. This has
+; the video. I moved the debounce countdown outside the interrupt subroutine,
+; but have it set and checked from inside the interrupt subroutine. This has
 ; some advantages over handling the full countdown in the IRQ handler:
 ;
 ; - As was mentioned in the video, having the countdown in the handler

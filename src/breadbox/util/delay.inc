@@ -7,7 +7,7 @@
 ;   DELAY_US <microseconds>   - delay for a known number of us
 ;   DELAY_MS <milliseconds>   - delay for a known number of ms
 ;
-; Low-level procedure (runtime):
+; Low-level subroutine (runtime):
 ;   DELAY::wait               - delay for DELAY::iterations * 5 cycles
 ;
 ; The implementation uses a nested X/Y register loop. Each iteration

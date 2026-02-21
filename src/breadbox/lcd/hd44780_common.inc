@@ -75,7 +75,7 @@ KERNAL_LCD_HD44780_COMMON_S = 1
     .endproc
 
     .proc _power_up_in_8bit_mode
-        ; Execute the power up procedure as described in the data sheet.
+        ; Execute the power up sequence as described in the data sheet.
 
         ; Wait >15ms after Vcc rises.
         DELAY_MS 20

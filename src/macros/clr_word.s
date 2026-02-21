@@ -3,7 +3,7 @@ CLEAR16_S = 1
 
 .include "set_word.s"
 
-.macro clr_word target
+.macro CLR_WORD target
     ; Store #0000 in a word.
     ;
     ; In:
@@ -11,7 +11,7 @@ CLEAR16_S = 1
     ; Out:
     ;   target = #0000
     ;   A = clobbered
-    set_word target, #00, #00
+    SET_WORD target, #00, #00
 .endmacro
 
 .endif

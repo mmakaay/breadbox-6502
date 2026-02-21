@@ -1,7 +1,7 @@
 .ifndef CP_WORD_S
 CP_WORD_S = 1
 
-.macro cp_word target, source
+.macro CP_WORD target, source
     ; Copy a 16 bit value (word) from one memory location to another.
     ;
     ; In:

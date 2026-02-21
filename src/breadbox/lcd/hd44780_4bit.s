@@ -46,13 +46,13 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         ; Out:
         ;   A, X, Y preserved
 
-        push_axy
+        PUSH_AXY
         jsr _configure_gpio_pins
         jsr _power_up_in_8bit_mode
         jsr _enable_4bit_mode
         jsr _configure_display
         jsr clr
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 
@@ -67,9 +67,9 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         pha
 
         ; Select CMND register in write mode: RWB=0 (write), RS=0 (CMND), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #0
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #0
         jsr GPIO::set_pins
 
         ; Send byte as two nibbles.
@@ -90,9 +90,9 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         pha
 
         ; Select DATA register in write mode: RWB=0 (write), RS=1 (DATA), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #CMND_PIN_RS
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #CMND_PIN_RS
         jsr GPIO::set_pins
 
         ; Send byte as two nibbles.
@@ -115,22 +115,22 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         pha
 
         ; Configure data pins for input.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         jsr GPIO::set_inputs
 
         ; Set control pins: RWB=1 (read), RS=0 (CMND), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #CMND_PIN_RWB
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #CMND_PIN_RWB
         jsr GPIO::set_pins
 
         ; EN to high, to make status available on DATA port.
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
 
         ; Select and read the DATA port.
-        set_byte GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::port, #DATA_PORT
         jsr GPIO::read_port
 
         ; Extract and store the busy flag.
@@ -139,8 +139,8 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         sta byte
 
         ; EN to low, to stop the read operation on the DATA port.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_off
 
         ; Low nibble: clock it out (data ignored).
@@ -148,8 +148,8 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         jsr GPIO::turn_off
 
         ; Restore data pins for output.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         jsr GPIO::set_outputs
 
         pla
@@ -170,21 +170,21 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         ;   LCD::byte = byte to send
 
         ; High nibble: upper 4 bits of byte, already in position.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         lda byte
         and #$f0 ; Not strictly required, because of pin masking.
         sta GPIO::value
         jsr GPIO::set_pins
 
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 
         ; Low nibble: lower 4 bits of byte, shifted to upper position.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         lda byte
         asl
         asl
@@ -193,8 +193,8 @@ KERNAL_LCD_HD44780_4BIT_S = 1
         sta GPIO::value
         jsr GPIO::set_pins
 
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 

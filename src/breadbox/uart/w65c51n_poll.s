@@ -59,7 +59,7 @@ KERNAL_UART_W65C51N_POLL_S = 1
     byte = UART::byte
 
     .proc init
-        push_axy
+        PUSH_AXY
 
         jsr _soft_reset
 
@@ -67,7 +67,7 @@ KERNAL_UART_W65C51N_POLL_S = 1
         ; - data = 8 bits, 1 stopbit
         ; - transmitter baud rate = according to configuration
         ; - receiver baud rate = using transmitter baud rate generator
-        set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
+        SET_BYTE CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
 
         ; Configure:
         ; - parity = none
@@ -75,9 +75,9 @@ KERNAL_UART_W65C51N_POLL_S = 1
         ; - transmitter = on (TIC2, no TX IRQs — they don't work anyway)
         ; - receiver = on
         ; - interrupts = none
-        set_byte CMD_REGISTER, #(PAROFF | ECHOOFF | TIC2 | DTRON | IRQOFF)
+        SET_BYTE CMD_REGISTER, #(PAROFF | ECHOOFF | TIC2 | DTRON | IRQOFF)
 
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 
@@ -117,11 +117,11 @@ KERNAL_UART_W65C51N_POLL_S = 1
     .endproc
 
     .proc write
-        push_axy
+        PUSH_AXY
         lda byte
         sta DATA_REGISTER
         jsr _tx_delay
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 

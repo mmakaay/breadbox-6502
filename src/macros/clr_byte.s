@@ -3,7 +3,7 @@ CLEAR8_S = 1
 
 .include "set_byte.s"
 
-.macro clr_byte target
+.macro CLR_BYTE target
     ; Store #00 in a byte.
     ;
     ; In:
@@ -11,7 +11,7 @@ CLEAR8_S = 1
     ; Out:
     ;   target = #0
     ;   A = clobbered
-    set_byte target, #00
+    SET_BYTE target, #00
 .endmacro
 
 .endif

@@ -29,7 +29,7 @@ KERNAL_LCD_HD44780_COMMON_S = 1
         ;   A, X, Y preserved
 
         pha
-        set_byte byte, #%00000001   ; Clear screen, set address to 0
+        SET_BYTE byte, #%00000001   ; Clear screen, set address to 0
         jsr write_cmnd
         pla
         rts
@@ -42,7 +42,7 @@ KERNAL_LCD_HD44780_COMMON_S = 1
         ;   A, X, Y preserved
 
         pha
-        set_byte byte, #%00000010   ; Move cursor to home position
+        SET_BYTE byte, #%00000010   ; Move cursor to home position
         jsr write_cmnd
         pla
         rts
@@ -56,19 +56,19 @@ KERNAL_LCD_HD44780_COMMON_S = 1
         ; Configure and initialize GPIO pins.
 
         ; Set data pins to output.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         jsr GPIO::set_outputs
 
         ; Set command pins to output.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
         jsr GPIO::set_outputs
 
         ; Clear LCD control bits (EN, RW, RS), preserving non-LCD pins.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #0
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #0
         jsr GPIO::set_pins
         
         rts
@@ -78,18 +78,18 @@ KERNAL_LCD_HD44780_COMMON_S = 1
         ; Execute the power up procedure as described in the data sheet.
 
         ; Wait >15ms after Vcc rises.
-        delay_ms 20
+        DELAY_MS 20
 
         ; The LCD might be in an unknown state. Sending the "Function set"
         ; command for 8-bit operation three times guarantees a known state,
         ; after which we can reliably switch to 4-bit mode.
-        set_byte byte, #%00110000 ; Set 8-bit operation
+        SET_BYTE byte, #%00110000 ; Set 8-bit operation
         jsr _write_init_byte      ; 1st attempt
-        delay_ms 5                ; Wait >4.1ms
+        DELAY_MS 5                ; Wait >4.1ms
         jsr _write_init_byte      ; 2nd attempt
-        delay_us 150              ; Wait >100us
+        DELAY_US 150              ; Wait >100us
         jsr _write_init_byte      ; 3rd attempt
-        delay_us 150              ; Not in datasheet, but let's delay here too
+        DELAY_US 150              ; Not in datasheet, but let's delay here too
         
         rts
     .endproc
@@ -97,30 +97,30 @@ KERNAL_LCD_HD44780_COMMON_S = 1
     .proc _enable_4bit_mode
         ; Enable 4-bit mode, to be used after powering up in 8-bit mode.
 
-        set_byte byte, #%00100000
+        SET_BYTE byte, #%00100000
         jsr _write_init_byte
         rts
     .endproc
 
     .proc _configure_display
-        set_byte byte, #FUNCTION_SET
+        SET_BYTE byte, #FUNCTION_SET
         jsr write_cmnd
-        set_byte byte, #%00001110 ; Turn display on, cursor on, blink off
+        SET_BYTE byte, #%00001110 ; Turn display on, cursor on, blink off
         jsr write_cmnd
-        set_byte byte, #%00000110 ; Shift cursor on data, no display shift
+        SET_BYTE byte, #%00000110 ; Shift cursor on data, no display shift
         jsr write_cmnd
 
         rts
     .endproc    
 
     .proc _write_init_byte
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
-        set_byte GPIO::value, byte
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::value, byte
         jsr GPIO::set_pins
 
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 

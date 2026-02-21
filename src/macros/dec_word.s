@@ -1,7 +1,7 @@
 .ifndef DEC16_S
 DEC16_S = 1
 
-.macro dec_word target
+.macro DEC_WORD target
     ; Decrement a 16 bit (word) value by 1.
     ;
     ; In:

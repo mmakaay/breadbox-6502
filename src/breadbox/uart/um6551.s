@@ -136,7 +136,7 @@ KERNAL_UART_UM6551_S = 1
     CMD_TX_IDLE   = PAROFF | ECHOOFF | TIC2 | DTRON | IRQON
 
     .proc init
-        push_axy
+        PUSH_AXY
 
         jsr _soft_reset
 
@@ -154,8 +154,8 @@ KERNAL_UART_UM6551_S = 1
         sta status
 
         ; Configure the RTS GPIO pin as output, active LOW (= send).
-        set_byte GPIO::port, #RTS_PORT
-        set_byte GPIO::mask, #RTS_PIN
+        SET_BYTE GPIO::port, #RTS_PORT
+        SET_BYTE GPIO::mask, #RTS_PIN
         jsr GPIO::set_outputs
         jsr GPIO::turn_off
 
@@ -163,14 +163,14 @@ KERNAL_UART_UM6551_S = 1
         ; interrupts from bytes that arrived during/before reset.
         ; The receiver is always on (DTRON). Flow control is handled
         ; externally via the RTS GPIO pin.
-        set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
-        set_byte CMD_REGISTER, #CMD_TX_IDLE
+        SET_BYTE CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
+        SET_BYTE CMD_REGISTER, #CMD_TX_IDLE
 
         ; Now install the IRQ handler and enable interrupts.
-        cp_address ::VECTORS::irq_vector, _irq_handler
+        CP_ADDRESS ::VECTORS::irq_vector, _irq_handler
         cli
 
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 
@@ -213,7 +213,7 @@ KERNAL_UART_UM6551_S = 1
         lda tx_pending
         cmp #1
         bne @done
-        set_byte CMD_REGISTER, #CMD_TX_ACTIVE
+        SET_BYTE CMD_REGISTER, #CMD_TX_ACTIVE
 
     @done:
         cli
@@ -270,7 +270,7 @@ KERNAL_UART_UM6551_S = 1
     @tx_stop:
         ; Buffer empty (or was already empty). Switch to TIC2
         ; to stop TXEMPTY from triggering further IRQs.
-        set_byte CMD_REGISTER, #CMD_TX_IDLE
+        SET_BYTE CMD_REGISTER, #CMD_TX_IDLE
 
     @done:
         pla

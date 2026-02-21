@@ -1,7 +1,7 @@
 .ifndef INC16_S
 INC16_S = 1
 
-.macro inc_word target
+.macro INC_WORD target
     ; Increment a 16 bit (word) value with 1.
     ;
     ; In:

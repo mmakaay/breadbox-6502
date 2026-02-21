@@ -3,7 +3,7 @@ STORE16_S = 1
 
 .include "set_byte.s"
 
-.macro set_word target, lo, hi
+.macro SET_WORD target, lo, hi
     ; Store a 16 bit value (word) in two consecutive memory positions.
     ;
     ; In:
@@ -14,8 +14,8 @@ STORE16_S = 1
     ;   target = value of low byte
     ;   target + 1 = value of high byte
     ;   A = clobberede7
-    set_byte target, lo
-    set_byte target + 1, hi
+    SET_BYTE target, lo
+    SET_BYTE target + 1, hi
 .endmacro
 
 .endif

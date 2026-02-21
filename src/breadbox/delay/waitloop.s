@@ -23,7 +23,7 @@ KERNAL_DELAY_WAITLOOP_S = 1
     iterations = DELAY::iterations
 
     .proc wait
-        push_axy
+        PUSH_AXY
 
         ldy iterations         ; Low byte: partial first pass
         ldx iterations+1       ; High byte: number of full 256 passes
@@ -34,7 +34,7 @@ KERNAL_DELAY_WAITLOOP_S = 1
         dex
         bne @loop
 
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 

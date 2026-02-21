@@ -4,12 +4,12 @@
 ; Provides timed delays based on the configured CPU clock speed.
 ;
 ; High-level macro (compile-time):
-;   delay_us <microseconds>   - delay for a known number of us
+;   DELAY_US <microseconds>   - delay for a known number of us
 ;
 ; Low-level procedure (runtime):
 ;   DELAY::wait               - delay for DELAY::iterations * 5 cycles
 ;
-; All procedures preserve A, X, Y. The delay_us macro clobbers A.
+; All procedures preserve A, X, Y. The DELAY_US macro clobbers A.
 ; -----------------------------------------------------------------
 
 .ifndef KERNAL_DELAY_S
@@ -38,7 +38,7 @@ KERNAL_DELAY_S = 1
 .endscope
 
 ; -----------------------------------------------------------------
-; delay_us - compile-time microsecond delay
+; DELAY_US - compile-time microsecond delay
 ;
 ; Converts a compile-time constant (microseconds) into the matching
 ; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
@@ -46,19 +46,19 @@ KERNAL_DELAY_S = 1
 ; In:
 ;   us = delay duration in microseconds (compile-time constant)
 ; Out:
-;   A = clobbered (by set_word)
+;   A = clobbered (by SET_WORD)
 ;   X, Y preserved
 ; -----------------------------------------------------------------
 
-.macro delay_us us
+.macro DELAY_US us
     .local ITERATIONS
     ITERATIONS = (us * (::CPU_CLOCK / 1000000)) / 5
-    set_word DELAY::iterations, #<ITERATIONS, #>ITERATIONS
+    SET_WORD DELAY::iterations, #<ITERATIONS, #>ITERATIONS
     jsr DELAY::wait
 .endmacro
 
 ; -----------------------------------------------------------------
-; delay_ms - compile-time milisecond delay
+; DELAY_MS - compile-time milisecond delay
 ;
 ; Converts a compile-time constant (miliseconds) into the matching
 ; iteration count for the current CPU_CLOCK, then calls DELAY::wait.
@@ -66,12 +66,12 @@ KERNAL_DELAY_S = 1
 ; In:
 ;   ms = delay duration in miliseconds (compile-time constant)
 ; Out:
-;   A = clobbered (by set_word)
+;   A = clobbered (by SET_WORD)
 ;   X, Y preserved
 ; -----------------------------------------------------------------
 
-.macro delay_ms ms
-    delay_us ms * 1000
+.macro DELAY_MS ms
+    DELAY_US ms * 1000
 .endmacro
 
 .endif

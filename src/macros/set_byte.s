@@ -1,7 +1,7 @@
 .ifndef STORE8_S
 STORE8_S = 1
 
-.macro set_byte target, value
+.macro SET_BYTE target, value
     ; Store an 8 bit value (byte) in a memory position.
     ;
     ; In:

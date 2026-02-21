@@ -3,7 +3,7 @@ CP_ADDRESS_S = 1
 
 .include "set_word.s"
 
-.macro cp_address target, source
+.macro CP_ADDRESS target, source
     ; Store a 16 bit address in two consecutive memory positions.
     ;
     ; This stores the address of the source label (not the
@@ -17,7 +17,7 @@ CP_ADDRESS_S = 1
     ;   target = low byte of source address
     ;   target + 1 = high byte of source address
     ;   A = clobbered
-    set_word target, #<source, #>source
+    SET_WORD target, #<source, #>source
 .endmacro
 
 .endif

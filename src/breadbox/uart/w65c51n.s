@@ -114,7 +114,7 @@ KERNAL_UART_W65C51N_S = 1
     CMD_VALUE    = PAROFF | ECHOOFF | TIC2 | DTRON | IRQON
 
     .proc init
-        push_axy
+        PUSH_AXY
 
         jsr _soft_reset
 
@@ -128,21 +128,21 @@ KERNAL_UART_W65C51N_S = 1
         sta status
 
         ; Configure the RTS GPIO pin as output, active LOW (= send).
-        set_byte GPIO::port, #RTS_PORT
-        set_byte GPIO::mask, #RTS_PIN
+        SET_BYTE GPIO::port, #RTS_PORT
+        SET_BYTE GPIO::mask, #RTS_PIN
         jsr GPIO::set_outputs
         jsr GPIO::turn_off
 
         ; Configure the ACIA before enabling IRQs, to avoid spurious
         ; interrupts from bytes that arrived during/before reset.
-        set_byte CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
-        set_byte CMD_REGISTER, #CMD_VALUE
+        SET_BYTE CTRL_REGISTER, #(LEN8 | STOP1 | USE_BAUD_RATE | RCSGEN)
+        SET_BYTE CMD_REGISTER, #CMD_VALUE
 
         ; Now install the IRQ handler and enable interrupts.
-        cp_address ::VECTORS::irq_vector, _irq_handler
+        CP_ADDRESS ::VECTORS::irq_vector, _irq_handler
         cli
 
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 
@@ -157,11 +157,11 @@ KERNAL_UART_W65C51N_S = 1
     .endproc
 
     .proc write
-        push_axy
+        PUSH_AXY
         lda byte
         sta DATA_REGISTER
         jsr _tx_delay
-        pull_axy
+        PULL_AXY
         rts
     .endproc
 

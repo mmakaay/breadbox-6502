@@ -24,8 +24,8 @@
         ; interrupt handling, these must be enabled using `cli`.
         sei
 
-        cp_address nmi_vector, default_nmi
-        cp_address irq_vector, default_irq
+        CP_ADDRESS nmi_vector, default_nmi
+        CP_ADDRESS irq_vector, default_irq
 
         rts
     .endproc

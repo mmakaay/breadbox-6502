@@ -45,7 +45,7 @@ CHAR_TIME_US = 10000000 / ::UART_BAUD_RATE
     ; Out:
     ;   A, X, Y preserved
 
-    delay_us CHAR_TIME_US
+    DELAY_US CHAR_TIME_US
     rts
 .endproc
 

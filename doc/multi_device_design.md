@@ -91,7 +91,7 @@ A small macro makes device selection readable:
     ; Out:
     ;   GPIO::io_base = addr
     ;   A = clobbered
-    set_word GPIO::io_base, #<addr, #>addr
+    SET_WORD GPIO::io_base, #<addr, #>addr
 .endmacro
 ```
 
@@ -177,8 +177,8 @@ To support two LCDs, you would define the driver logic inside a macro:
                 ; From here, the code is the same as today, but it operates
                 ; on whichever VIA was selected above.
                 pha
-                set_byte GPIO::port, #data_port
-                set_byte GPIO::value, byte
+                SET_BYTE GPIO::port, #data_port
+                SET_BYTE GPIO::value, byte
                 jsr GPIO::write_port
                 ; ... pulse EN, etc. ...
                 pla

@@ -136,25 +136,19 @@ B19200     = %00001111       ; Baud rate 19200
     ; Out:
     ;   A, X, Y preserved
 
-    push_axy
+    PUSH_AXY
 
     ; Soft reset by writing to the status register.
-    clr_byte STATUS_REGISTER
+    CLR_BYTE STATUS_REGISTER
 
     ; Wait for soft reset to complete. The UART needs time to finish its
     ; internal reset before CTRL and CMD writes will take effect.
-    ; This is a crude delay loop, but it works. Before using this, an
-    ; attempt was done to base readiness on the TXEMPTY status bit, but
-    ; that did not work.
-    ldx #$ff
-    ldy #$ff
-@wait:
-    dey
-    bne @wait
-    dex
-    bne @wait
+    ; This is a crude delay, but it works. Before using this, an attempt
+    ; was done to base readiness on the TXEMPTY status bit, but that did
+    ; not work.
+    DELAY_MS 1000
 
-    pull_axy
+    PULL_AXY
     rts
 .endproc
 

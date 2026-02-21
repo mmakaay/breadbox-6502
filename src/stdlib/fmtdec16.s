@@ -25,7 +25,7 @@ FMTDEC16_S = 1
     jsr str_clr  ; Clear string buffer
 
     ; Set the divider for divmod to 10, so we can use it to strip off the "ones".
-    set_word ZP::word_b, #10, #00
+    SET_WORD ZP::word_b, #10, #00
 
 @next_digit:
     jsr divmod16

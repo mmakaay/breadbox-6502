@@ -65,18 +65,18 @@ KERNAL_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Put the full byte on the LCD data bus.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::value, byte
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::value, byte
         jsr GPIO::write_port
 
         ; Set control pins: RWB=0 (write), RS=0 (CMND), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #0
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #0
         jsr GPIO::set_pins
 
         ; Pulse EN high then low to trigger data transfer.
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 
@@ -95,18 +95,18 @@ KERNAL_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Put the full byte on the LCD data bus.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::value, byte
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::value, byte
         jsr GPIO::write_port
 
         ; Set control pins: RWB=0 (write), RS=1 (DATA), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #CMND_PIN_RS
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #CMND_PIN_RS
         jsr GPIO::set_pins
 
         ; Pulse EN high then low to trigger data transfer.
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
         jsr GPIO::turn_off
 
@@ -125,22 +125,22 @@ KERNAL_LCD_HD44780_8BIT_S = 1
         pha
 
         ; Configure data port for input, so we can read the status.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         jsr GPIO::set_inputs
 
         ; Set control pins: RWB=1 (read), RS=0 (CMND), EN=0.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PINS
-        set_byte GPIO::value, #CMND_PIN_RWB
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PINS
+        SET_BYTE GPIO::value, #CMND_PIN_RWB
         jsr GPIO::set_pins
 
         ; EN to high, to make status available on DATA port.
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_on
 
         ; Select and read the DATA port.
-        set_byte GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::port, #DATA_PORT
         jsr GPIO::read_port
 
         ; Extract and store the busy flag.
@@ -149,13 +149,13 @@ KERNAL_LCD_HD44780_8BIT_S = 1
         sta byte
 
         ; EN to low, to stop the read operation on the DATA port.
-        set_byte GPIO::port, #CMND_PORT
-        set_byte GPIO::mask, #CMND_PIN_EN
+        SET_BYTE GPIO::port, #CMND_PORT
+        SET_BYTE GPIO::mask, #CMND_PIN_EN
         jsr GPIO::turn_off
 
         ; Restore data port for output.
-        set_byte GPIO::port, #DATA_PORT
-        set_byte GPIO::mask, #DATA_PINS
+        SET_BYTE GPIO::port, #DATA_PORT
+        SET_BYTE GPIO::mask, #DATA_PINS
         jsr GPIO::set_outputs
 
         pla
